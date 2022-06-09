@@ -24,7 +24,7 @@
         "phpstan/phpstan-deprecation-rules": "^1",
         "phpstan/phpstan-strict-rules": "^1.1",
         "phpstan/phpstan-phpunit": "^1",
-        "symfony/filesystem": "^6.1"
+        "symfony/filesystem": "^5.4 || ^6"
     },
     "autoload": {
         "psr-4": {
