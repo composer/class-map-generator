@@ -1,0 +1,11 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Method Composer\\\\ClassMapGenerator\\\\PhpFileParser\\:\\:findClasses\\(\\) should return array\\<int, class\\-string\\> but returns array\\<int, string\\>\\.$#"
+			count: 1
+			path: src/PhpFileParser.php
+
+		-
+			message: "#^Call to static method PHPUnit\\\\Framework\\\\Assert\\:\\:assertArrayHasKey\\(\\) with 'A' and array\\<class\\-string, array\\<non\\-empty\\-string\\>\\> will always evaluate to false\\.$#"
+			count: 1
+			path: tests/ClassMapGeneratorTest.php
