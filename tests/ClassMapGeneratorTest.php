@@ -30,14 +30,14 @@ class ClassMapGeneratorTest extends TestCase
      */
     private $generator;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
         $this->generator = new ClassMapGenerator(['php', 'inc', 'hh']);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         parent::tearDown();
 
