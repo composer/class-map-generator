@@ -187,11 +187,6 @@ class ClassMapGenerator
             }
 
             foreach ($classes as $class) {
-                // skip classes not within the given namespace prefix
-                if ('classmap' === $autoloadType && null !== $namespace && '' !== $namespace && 0 !== strpos($class, $namespace)) {
-                    continue;
-                }
-
                 if (!$this->classMap->hasClass($class)) {
                     $this->classMap->addClass($class, $filePath);
                 } elseif ($filePath !== $this->classMap->getClassPath($class) && !Preg::isMatch('{/(test|fixture|example|stub)s?/}i', strtr($this->classMap->getClassPath($class).' '.$filePath, '\\', '/'))) {

@@ -25,7 +25,38 @@ Requirements
 Basic usage
 -----------
 
-TODO
+If all you want is to scan a directory and extract a classmap with all
+classes/interfaces/traits/enums mapped to their paths, you can simply use:
+
+
+```
+use Composer\ClassMapGenerator\ClassMapGenerator;
+
+$map = ClassMapGenerator::createMap('path/to/scan');
+foreach ($map as $symbol => $path) {
+    // do your thing
+}
+```
+
+For more advanced usage, you can instantiate a generator object and call scanPaths one or more time
+then call getClassMap to get a ClassMap object containing the resulting map + eventual warnings.
+
+```
+use Composer\ClassMapGenerator\ClassMapGenerator;
+
+$generator = new ClassMapGenerator;
+$generator->scanPaths('path/to/scan');
+$generator->scanPaths('path/to/scan2');
+
+$classMap = $generator->getClassMap();
+foreach ($classMap->getMap() as $symbol => $path) {
+    // do your thing
+}
+
+foreach ($classMap->getAmbiguousClasses() as $symbol => $path) {
+    // warn user about ambiguous class resolution
+}
+```
 
 
 License

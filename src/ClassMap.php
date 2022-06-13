@@ -49,6 +49,10 @@ class ClassMap
     }
 
     /**
+     * A map of class names to their list of ambiguous paths
+     *
+     * To get the path the class is being mapped to, call getClassPath
+     *
      * @return array<class-string, array<non-empty-string>>
      */
     public function getAmbiguousClasses(): array
