@@ -53,7 +53,7 @@ foreach ($classMap->getMap() as $symbol => $path) {
     // do your thing
 }
 
-foreach ($classMap->getAmbiguousClasses() as $symbol => $path) {
+foreach ($classMap->getAmbiguousClasses() as $symbol => $paths) {
     // warn user about ambiguous class resolution
 }
 ```
