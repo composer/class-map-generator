@@ -15,7 +15,7 @@ namespace Composer\ClassMapGenerator;
 /**
  * @author Jordi Boggiano <j.boggiano@seld.be>
  */
-class ClassMap
+class ClassMap implements \Countable
 {
     /**
      * @var array<class-string, non-empty-string>
@@ -122,5 +122,10 @@ class ClassMap
     public function addAmbiguousClass(string $className, string $path): void
     {
         $this->ambiguousClasses[$className][] = $path;
+    }
+
+    public function count(): int
+    {
+        return \count($this->map);
     }
 }
