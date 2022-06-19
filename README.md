@@ -49,6 +49,7 @@ $generator->scanPaths('path/to/scan');
 $generator->scanPaths('path/to/scan2');
 
 $classMap = $generator->getClassMap();
+$classMap->sort(); // optionally sort classes alphabetically
 foreach ($classMap->getMap() as $symbol => $path) {
     // do your thing
 }
