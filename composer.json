@@ -15,7 +15,7 @@
     ],
     "require": {
         "php": "^7.2 || ^8.0",
-        "symfony/finder": "^4.4 || ^5.3 || ^6",
+        "symfony/finder": "^4.4 || ^5.3 || ^6 || ^7",
         "composer/pcre": "^2 || ^3"
     },
     "require-dev": {
