@@ -313,7 +313,7 @@ class ClassMapGenerator
         }
 
         // ensure c: is normalized to C:
-        $prefix = Preg::replaceCallbackStrictGroups('{(?:^|://)[a-z]:$}i', function (array $m) { return strtoupper($m[0]); }, $prefix);
+        $prefix = Preg::replaceCallback('{(?:^|://)[a-z]:$}i', function (array $m) { return strtoupper((string) $m[0]); }, $prefix);
 
         return $prefix.$absolute.implode('/', $parts);
     }
