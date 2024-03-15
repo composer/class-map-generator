@@ -61,7 +61,7 @@ class ClassMapGenerator
      *
      * @return $this
      */
-    public function avoidDuplicateScans(FileList $scannedFiles = null): self
+    public function avoidDuplicateScans(?FileList $scannedFiles = null): self
     {
         $this->scannedFiles = $scannedFiles ?? new FileList;
 
@@ -100,7 +100,7 @@ class ClassMapGenerator
      *
      * @throws \RuntimeException When the path is neither an existing file nor directory
      */
-    public function scanPaths($path, string $excluded = null, string $autoloadType = 'classmap', ?string $namespace = null): void
+    public function scanPaths($path, ?string $excluded = null, string $autoloadType = 'classmap', ?string $namespace = null): void
     {
         if (!in_array($autoloadType, ['psr-0', 'psr-4', 'classmap'], true)) {
             throw new \InvalidArgumentException('$autoloadType must be one of: "psr-0", "psr-4" or "classmap"');
