@@ -247,7 +247,7 @@ class ClassMapGeneratorTest extends TestCase
             'PrefixCollision_A_B_Foo' => realpath(__DIR__) . '/Fixtures/beta/PrefixCollision/A/B/Foo.php',
         );
 
-        $this->generator->scanPaths(realpath(__DIR__) . '/Fixtures/beta', null, 'classmap', null, 'NamespaceCollision');
+        $this->generator->scanPaths(realpath(__DIR__) . '/Fixtures/beta', null, 'classmap', null, ['NamespaceCollision']);
         $result = $this->generator->getClassMap();
         self::assertEqualsNormalized($expected, $result->getMap());
     }
