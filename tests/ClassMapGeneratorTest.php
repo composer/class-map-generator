@@ -240,6 +240,18 @@ class ClassMapGeneratorTest extends TestCase
         self::assertEqualsNormalized($expected, $result);
     }
 
+    public function testGetPSR4Violations(): void
+    {
+        $this->generator->scanPaths(__DIR__ . '/Fixtures/psrViolations', null, 'psr-4', 'ExpectedNamespace\\');
+        $classMap = $this->generator->getClassMap();
+        static::assertSame(
+            [
+                'Class ExpectedNamespace\UnexpectedSubNamespace\ClassWithIncorrectSubNamespace located in ./tests/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php does not comply with psr-4 autoloading standard. Skipping.',
+            ],
+            $classMap->getPsrViolations()
+        );
+    }
+
     /**
      * @param array<string, string> $expected
      * @param array<class-string, string> $actual
