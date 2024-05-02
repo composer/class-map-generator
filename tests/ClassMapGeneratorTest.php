@@ -240,6 +240,18 @@ class ClassMapGeneratorTest extends TestCase
         self::assertEqualsNormalized($expected, $result);
     }
 
+    public function testCreateMapWithDirectoryExcluded(): void
+    {
+        $expected = array(
+            'PrefixCollision_A_B_Bar' => realpath(__DIR__) . '/Fixtures/beta/PrefixCollision/A/B/Bar.php',
+            'PrefixCollision_A_B_Foo' => realpath(__DIR__) . '/Fixtures/beta/PrefixCollision/A/B/Foo.php',
+        );
+
+        $this->generator->scanPaths(realpath(__DIR__) . '/Fixtures/beta', null, 'classmap', null, ['NamespaceCollision']);
+        $result = $this->generator->getClassMap();
+        self::assertEqualsNormalized($expected, $result->getMap());
+    }
+
     /**
      * @param array<string, string> $expected
      * @param array<class-string, string> $actual
