@@ -247,8 +247,8 @@ class ClassMapGeneratorTest extends TestCase
         self::assertSame(
             [
                 'Class ClassWithoutNameSpace located in ./tests/Fixtures/psrViolations/ClassWithoutNameSpace.php does not comply with psr-4 autoloading standard. Skipping.',
-                'Class ExpectedNamespace\UnexpectedSubNamespace\ClassWithIncorrectSubNamespace located in ./tests/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php does not comply with psr-4 autoloading standard. Skipping.',
                 'Class UnexpectedNamespace\ClassWithNameSpaceOutsideConfiguredScope located in ./tests/Fixtures/psrViolations/ClassWithNameSpaceOutsideConfiguredScope.php does not comply with psr-4 autoloading standard. Skipping.',
+                'Class ExpectedNamespace\UnexpectedSubNamespace\ClassWithIncorrectSubNamespace located in ./tests/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php does not comply with psr-4 autoloading standard. Skipping.',
             ],
             $classMap->getPsrViolations()
         );
