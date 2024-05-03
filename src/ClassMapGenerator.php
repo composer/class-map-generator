@@ -97,10 +97,11 @@ class ClassMapGenerator
      * @param non-empty-string|null                                 $excluded     Regex that matches file paths to be excluded from the classmap
      * @param 'classmap'|'psr-0'|'psr-4'                            $autoloadType Optional autoload standard to use mapping rules with the namespace instead of purely doing a classmap
      * @param string|null                                           $namespace    Optional namespace prefix to filter by, only for psr-0/psr-4 autoloading
+     * @param array<string>                                         $excludedDirs Optional dirs to exclude from search relative to $path
      *
      * @throws \RuntimeException When the path is neither an existing file nor directory
      */
-    public function scanPaths($path, ?string $excluded = null, string $autoloadType = 'classmap', ?string $namespace = null): void
+    public function scanPaths($path, ?string $excluded = null, string $autoloadType = 'classmap', ?string $namespace = null, array $excludedDirs = []): void
     {
         if (!in_array($autoloadType, ['psr-0', 'psr-4', 'classmap'], true)) {
             throw new \InvalidArgumentException('$autoloadType must be one of: "psr-0", "psr-4" or "classmap"');
@@ -124,7 +125,8 @@ class ClassMapGenerator
                     ->files()
                     ->followLinks()
                     ->name('/\.(?:'.implode('|', array_map('preg_quote', $this->extensions)).')$/')
-                    ->in($path);
+                    ->in($path)
+                    ->exclude($excludedDirs);
             } else {
                 throw new \RuntimeException(
                     'Could not scan for classes inside "'.$path.'" which does not appear to be a file nor a folder'

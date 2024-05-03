@@ -118,7 +118,10 @@ class PhpFileParser
                 $extraTypes .= '|enum';
             }
 
-            PhpFileCleaner::setTypeConfig(array_merge(['class', 'interface', 'trait'], array_filter(explode('|', $extraTypes))));
+            $extraTypesArray = array_filter(explode('|', $extraTypes), function (string $type) {
+                return $type !== '';
+            });
+            PhpFileCleaner::setTypeConfig(array_merge(['class', 'interface', 'trait'], $extraTypesArray));
         }
 
         return $extraTypes;

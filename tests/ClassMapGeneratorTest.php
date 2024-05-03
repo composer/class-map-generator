@@ -244,7 +244,7 @@ class ClassMapGeneratorTest extends TestCase
     {
         $this->generator->scanPaths(__DIR__ . '/Fixtures/psrViolations', null, 'psr-4', 'ExpectedNamespace\\');
         $classMap = $this->generator->getClassMap();
-        static::assertSame(
+        self::assertSame(
             [
                 'Class ClassWithoutNameSpace located in ./tests/Fixtures/psrViolations/ClassWithoutNameSpace.php does not comply with psr-4 autoloading standard. Skipping.',
                 'Class ExpectedNamespace\UnexpectedSubNamespace\ClassWithIncorrectSubNamespace located in ./tests/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php does not comply with psr-4 autoloading standard. Skipping.',
@@ -252,6 +252,18 @@ class ClassMapGeneratorTest extends TestCase
             ],
             $classMap->getPsrViolations()
         );
+    }
+
+    public function testCreateMapWithDirectoryExcluded(): void
+    {
+        $expected = array(
+            'PrefixCollision_A_B_Bar' => realpath(__DIR__) . '/Fixtures/beta/PrefixCollision/A/B/Bar.php',
+            'PrefixCollision_A_B_Foo' => realpath(__DIR__) . '/Fixtures/beta/PrefixCollision/A/B/Foo.php',
+        );
+
+        $this->generator->scanPaths(realpath(__DIR__) . '/Fixtures/beta', null, 'classmap', null, ['NamespaceCollision']);
+        $result = $this->generator->getClassMap();
+        self::assertEqualsNormalized($expected, $result->getMap());
     }
 
     /**
