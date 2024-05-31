@@ -246,7 +246,7 @@ class ClassMapGenerator
             foreach ($rejectedClasses as $class) {
                 $shortPath = Preg::replace('{^'.preg_quote(self::getCwd()).'}', '.', $filePath, 1);
                 $shortBasePath = Preg::replace('{^'.preg_quote(self::getCwd()).'}', '.', $basePath, 1);
-                $this->classMap->addPsrViolation("Class $class located in $shortPath does not comply with $namespaceType autoloading standard (rule: $baseNamespace => $shortBasePath). Skipping.");
+                $this->classMap->addPsrViolation("Class $class located in $shortPath does not comply with $namespaceType autoloading standard (rule: $baseNamespace => $shortBasePath). Skipping.", $class, $filePath);
             }
 
             return [];
