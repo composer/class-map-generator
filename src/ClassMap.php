@@ -121,7 +121,7 @@ class ClassMap implements \Countable
         $this->psrViolations[$path][] = ['warning' => $warning, 'className' => $className];
     }
 
-    public function clearViolationsByPath(string $pathPrefix): void
+    public function clearPsrViolationsByPath(string $pathPrefix): void
     {
         $pathPrefix = rtrim(strtr('\\', '/', $pathPrefix), '/');
 
