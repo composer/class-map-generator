@@ -244,7 +244,9 @@ class ClassMapGenerator
         // warn only if no valid classes, else silently skip invalid
         if (\count($validClasses) === 0) {
             foreach ($rejectedClasses as $class) {
-                $this->classMap->addPsrViolation("Class $class located in ".Preg::replace('{^'.preg_quote(self::getCwd()).'}', '.', $filePath, 1)." does not comply with $namespaceType autoloading standard. Skipping.");
+                $shortPath = Preg::replace('{^'.preg_quote(self::getCwd()).'}', '.', $filePath, 1);
+                $shortBasePath = Preg::replace('{^'.preg_quote(self::getCwd()).'}', '.', $basePath, 1);
+                $this->classMap->addPsrViolation("Class $class located in $shortPath does not comply with $namespaceType autoloading standard (rule: $baseNamespace => $shortBasePath). Skipping.");
             }
 
             return [];
