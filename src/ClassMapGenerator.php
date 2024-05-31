@@ -218,10 +218,6 @@ class ClassMapGenerator
         $realSubPath = substr($realSubPath, 0, $dotPosition === false ? PHP_INT_MAX : $dotPosition);
 
         foreach ($classes as $class) {
-            // silently skip if ns doesn't have common root
-            if ('' !== $baseNamespace && 0 !== strpos($class, $baseNamespace)) {
-                continue;
-            }
             // transform class name to file path and validate
             if ('psr-0' === $namespaceType) {
                 $namespaceLength = strrpos($class, '\\');
