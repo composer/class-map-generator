@@ -55,6 +55,10 @@ class ClassMap implements \Countable
      */
     public function getPsrViolations(): array
     {
+        if (\count($this->psrViolations) === 0) {
+            return [];
+        }
+
         return array_map(static function (array $violation): string {
             return $violation['warning'];
         }, array_merge(...array_values($this->psrViolations)));
