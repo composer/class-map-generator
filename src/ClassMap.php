@@ -88,7 +88,7 @@ class ClassMap implements \Countable
      */
     public function addClass(string $className, string $path): void
     {
-        unset($this->psrViolations[strtr('\\', '/', $path)]);
+        unset($this->psrViolations[strtr($path, '\\', '/')]);
 
         $this->map[$className] = $path;
     }
@@ -116,14 +116,14 @@ class ClassMap implements \Countable
 
     public function addPsrViolation(string $warning, string $className, string $path): void
     {
-        $path = rtrim(strtr('\\', '/', $path), '/');
+        $path = rtrim(strtr($path, '\\', '/'), '/');
 
         $this->psrViolations[$path][] = ['warning' => $warning, 'className' => $className];
     }
 
     public function clearPsrViolationsByPath(string $pathPrefix): void
     {
-        $pathPrefix = rtrim(strtr('\\', '/', $pathPrefix), '/');
+        $pathPrefix = rtrim(strtr($pathPrefix, '\\', '/'), '/');
 
         foreach ($this->psrViolations as $path => $violations) {
             if ($path === $pathPrefix || 0 === \strpos($path, $pathPrefix.'/')) {
