@@ -2,4 +2,6 @@
 
 namespace ExpectedNamespace\UnexpectedSubNamespace;
 
-class ClassWithIncorrectSubNamespace {}
+use Foo\Baz\Enum as Bar;
+
+CLass ClassWithIncorrectSubNamespace {}
