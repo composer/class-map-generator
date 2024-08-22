@@ -20,19 +20,16 @@ jobs:
           - "8.3"
 
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: actions/checkout@v4
 
-      - uses: "shivammathur/setup-php@v2"
+      - uses: shivammathur/setup-php@v2
         with:
-          coverage: "none"
           php-version: "${{ matrix.php-version }}"
+          coverage: none
 
-      - uses: "ramsey/composer-install@v3"
+      - uses: ramsey/composer-install@v3
         with:
           dependency-versions: highest
 
-      - name: "Initialize PHPUnit sources"
-        run: "vendor/bin/simple-phpunit --filter NO_TEST_JUST_AUTOLOAD_THANKS"
-
-      - name: "Run PHPStan"
-        run: "composer phpstan"
+      - name: Run PHPStan
+        run: composer phpstan

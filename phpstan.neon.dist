@@ -14,8 +14,5 @@ parameters:
     reportUnmatchedIgnoredErrors: false
     treatPhpDocTypesAsCertain: false
 
-    bootstrapFiles:
-        - tests/phpstan-locate-phpunit-autoloader.php
-
     excludePaths:
        - 'tests/Fixtures/*'
