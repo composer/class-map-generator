@@ -4,8 +4,8 @@ on:
   - push
   - pull_request
 
-env:
-  SYMFONY_PHPUNIT_REMOVE_RETURN_TYPEHINT: "1"
+permissions:
+  contents: read
 
 jobs:
   tests:

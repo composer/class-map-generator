@@ -4,8 +4,8 @@ on:
   - push
   - pull_request
 
-env:
-  SYMFONY_PHPUNIT_VERSION: ""
+permissions:
+  contents: read
 
 jobs:
   tests:
