@@ -30,16 +30,16 @@ jobs:
             os: windows-latest
 
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: actions/checkout@v4
 
-      - uses: "shivammathur/setup-php@v2"
+      - uses: shivammathur/setup-php@v2
         with:
-          coverage: "none"
           php-version: "${{ matrix.php-version }}"
+          coverage: none
 
-      - uses: "ramsey/composer-install@v3"
+      - uses: ramsey/composer-install@v3
         with:
           dependency-versions: highest
 
-      - name: "Run tests"
-        run: "vendor/bin/simple-phpunit --verbose"
+      - name: Run tests
+        run: composer test
