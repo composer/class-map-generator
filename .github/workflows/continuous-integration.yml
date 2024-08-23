@@ -12,6 +12,7 @@ jobs:
     name: "CI"
 
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
 
     strategy:
       matrix:
@@ -24,6 +25,7 @@ jobs:
           - "8.2"
           - "8.3"
           - "8.4"
+        experimental: [false]
         os: [ubuntu-latest]
         include:
           - php-version: "8.3"
