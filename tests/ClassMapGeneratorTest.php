@@ -186,9 +186,11 @@ class ClassMapGeneratorTest extends TestCase
     {
         $tempDir = self::getUniqueTmpDirectory();
 
-        file_put_contents($tempDir . '/A.php', "<?php\nclass A {}");
+        mkdir($tempDir.'/src');
+        mkdir($tempDir.'/ambiguous');
+        file_put_contents($tempDir . '/src/A.php', "<?php\nclass A {}");
         file_put_contents(
-            $tempDir . '/B.php',
+            $tempDir . '/src/B.php',
             "<?php
                 if (true) {
                     interface B {}
@@ -199,16 +201,35 @@ class ClassMapGeneratorTest extends TestCase
         );
 
         foreach (array('test', 'fixture', 'example') as $keyword) {
-            if (!is_dir($tempDir . '/' . $keyword)) {
-                mkdir($tempDir . '/' . $keyword, 0777, true);
+            if (!is_dir($tempDir . '/ambiguous/' . $keyword)) {
+                mkdir($tempDir . '/ambiguous/' . $keyword, 0777, true);
             }
-            file_put_contents($tempDir . '/' . $keyword . '/A.php', "<?php\nclass A {}");
+            file_put_contents($tempDir . '/ambiguous/' . $keyword . '/A.php', "<?php\nclass A {}");
         }
 
-        $this->generator->scanPaths($tempDir);
+        // if we scan src first, then test ambiguous refs will be ignored correctly
+        $this->generator->scanPaths($tempDir.'/src');
+        $this->generator->scanPaths($tempDir.'/ambiguous');
+        $classMap = $this->generator->getClassMap();
+        self::assertCount(0, $classMap->getAmbiguousClasses());
+
+        // but when retrieving without filtering, the ambiguous classes are there
+        self::assertCount(1, $classMap->getAmbiguousClasses(false));
+        self::assertCount(3, $classMap->getAmbiguousClasses(false)['A']);
+
+        // if we scan tests first however, then we always get ambiguous refs as the test one is overriding src
+        $this->generator = new ClassMapGenerator(['php', 'inc', 'hh']);
+        $this->generator->scanPaths($tempDir.'/ambiguous');
+        $this->generator->scanPaths($tempDir.'/src');
         $classMap = $this->generator->getClassMap();
 
-        self::assertCount(0, $classMap->getAmbiguousClasses());
+        // when retrieving with filtering, only the one from src is seen as ambiguous
+        self::assertCount(1, $classMap->getAmbiguousClasses());
+        self::assertCount(1, $classMap->getAmbiguousClasses()['A']);
+        self::assertSame($tempDir.'/src'.DIRECTORY_SEPARATOR.'A.php', $classMap->getAmbiguousClasses()['A'][0]);
+        // when retrieving without filtering, all the ambiguous classes are there
+        self::assertCount(1, $classMap->getAmbiguousClasses(false));
+        self::assertCount(3, $classMap->getAmbiguousClasses(false)['A']);
 
         $fs = new Filesystem();
         $fs->remove($tempDir);
@@ -291,7 +312,7 @@ class ClassMapGeneratorTest extends TestCase
         $root = sys_get_temp_dir();
 
         do {
-            $unique = $root . DIRECTORY_SEPARATOR . uniqid('composer-test-' . random_int(1000, 9000));
+            $unique = $root . DIRECTORY_SEPARATOR . uniqid('composer-classmap-' . random_int(1000, 9000));
 
             if (!file_exists($unique) && @mkdir($unique, 0777)) {
                 return (string) realpath($unique);

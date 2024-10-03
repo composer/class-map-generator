@@ -9,3 +9,8 @@ parameters:
 			message: "#^Call to static method PHPUnit\\\\Framework\\\\Assert\\:\\:assertArrayHasKey\\(\\) with 'A' and array\\<class\\-string, array\\<non\\-empty\\-string\\>\\> will always evaluate to false\\.$#"
 			count: 1
 			path: tests/ClassMapGeneratorTest.php
+
+		-
+			message: "#^Offset 'A' does not exist on non\\-empty\\-array\\<class\\-string, array\\<non\\-empty\\-string\\>\\>\\.$#"
+			count: 4
+			path: tests/ClassMapGeneratorTest.php
