@@ -277,6 +277,32 @@ class ClassMapGeneratorTest extends TestCase
         );
     }
 
+    public function testGetRawPSR4Violations(): void
+    {
+        $this->generator->scanPaths(__DIR__ . '/Fixtures/psrViolations', null, 'psr-4', 'ExpectedNamespace\\');
+        $classMap = $this->generator->getClassMap();
+        $rawViolations = $classMap->getRawPsrViolations();
+
+        $classWithoutNameSpaceFilepath = __DIR__ . '/Fixtures/psrViolations/ClassWithoutNameSpace.php';
+        $classWithIncorrectSubNamespaceFilepath = __DIR__ . '/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php';
+        $classWithNameSpaceOutsideConfiguredScopeFilepath = __DIR__ . '/Fixtures/psrViolations/ClassWithNameSpaceOutsideConfiguredScope.php';
+
+        self::assertArrayHasKey($classWithoutNameSpaceFilepath, $rawViolations);
+        self::assertCount(1, $rawViolations[$classWithoutNameSpaceFilepath]);
+        self::assertSame('Class ClassWithoutNameSpace located in ./tests/Fixtures/psrViolations/ClassWithoutNameSpace.php does not comply with psr-4 autoloading standard (rule: ExpectedNamespace\ => ./tests/Fixtures/psrViolations). Skipping.', $rawViolations[$classWithoutNameSpaceFilepath][0]['warning']);
+        self::assertSame('ClassWithoutNameSpace', $rawViolations[$classWithoutNameSpaceFilepath][0]['className']);
+
+        self::assertArrayHasKey($classWithIncorrectSubNamespaceFilepath, $rawViolations);
+        self::assertCount(1, $rawViolations[$classWithIncorrectSubNamespaceFilepath]);
+        self::assertSame('Class ExpectedNamespace\UnexpectedSubNamespace\ClassWithIncorrectSubNamespace located in ./tests/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php does not comply with psr-4 autoloading standard (rule: ExpectedNamespace\ => ./tests/Fixtures/psrViolations). Skipping.', $rawViolations[$classWithIncorrectSubNamespaceFilepath][0]['warning']);
+        self::assertSame('ExpectedNamespace\UnexpectedSubNamespace\ClassWithIncorrectSubNamespace', $rawViolations[$classWithIncorrectSubNamespaceFilepath][0]['className']);
+
+        self::assertArrayHasKey($classWithNameSpaceOutsideConfiguredScopeFilepath, $rawViolations);
+        self::assertCount(1, $rawViolations[$classWithNameSpaceOutsideConfiguredScopeFilepath]);
+        self::assertSame('Class UnexpectedNamespace\ClassWithNameSpaceOutsideConfiguredScope located in ./tests/Fixtures/psrViolations/ClassWithNameSpaceOutsideConfiguredScope.php does not comply with psr-4 autoloading standard (rule: ExpectedNamespace\ => ./tests/Fixtures/psrViolations). Skipping.', $rawViolations[$classWithNameSpaceOutsideConfiguredScopeFilepath][0]['warning']);
+        self::assertSame('UnexpectedNamespace\ClassWithNameSpaceOutsideConfiguredScope', $rawViolations[$classWithNameSpaceOutsideConfiguredScopeFilepath][0]['className']);
+    }
+
     public function testCreateMapWithDirectoryExcluded(): void
     {
         $expected = array(
