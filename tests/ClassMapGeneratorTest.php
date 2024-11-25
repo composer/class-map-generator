@@ -283,9 +283,9 @@ class ClassMapGeneratorTest extends TestCase
         $classMap = $this->generator->getClassMap();
         $rawViolations = $classMap->getRawPsrViolations();
 
-        $classWithoutNameSpaceFilepath = __DIR__ . '/Fixtures/psrViolations/ClassWithoutNameSpace.php';
-        $classWithIncorrectSubNamespaceFilepath = __DIR__ . '/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php';
-        $classWithNameSpaceOutsideConfiguredScopeFilepath = __DIR__ . '/Fixtures/psrViolations/ClassWithNameSpaceOutsideConfiguredScope.php';
+        $classWithoutNameSpaceFilepath = strtr(__DIR__, '\\', '/') . '/Fixtures/psrViolations/ClassWithoutNameSpace.php';
+        $classWithIncorrectSubNamespaceFilepath = strtr(__DIR__, '\\', '/') . '/Fixtures/psrViolations/ClassWithIncorrectSubNamespace.php';
+        $classWithNameSpaceOutsideConfiguredScopeFilepath = strtr(__DIR__, '\\', '/') . '/Fixtures/psrViolations/ClassWithNameSpaceOutsideConfiguredScope.php';
 
         self::assertArrayHasKey($classWithoutNameSpaceFilepath, $rawViolations);
         self::assertCount(1, $rawViolations[$classWithoutNameSpaceFilepath]);
