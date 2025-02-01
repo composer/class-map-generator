@@ -142,10 +142,10 @@ class ClassMapGenerator
                 continue;
             }
 
-            if (!self::isAbsolutePath($filePath)) {
+            if (!self::isAbsolutePath($filePath) && !self::isStreamWrapper($filePath)) {
                 $filePath = $cwd . '/' . $filePath;
                 $filePath = self::normalizePath($filePath);
-            } else {
+            } elseif(!self::isStreamWrapper($filePath)) {
                 $filePath = Preg::replace('{[\\\\/]{2,}}', '/', $filePath);
             }
 
@@ -153,7 +153,9 @@ class ClassMapGenerator
                 throw new \LogicException('Got an empty $filePath for '.$file->getPathname());
             }
 
-            $realPath = realpath($filePath);
+            $realPath = !self::isStreamWrapper($filePath)
+	            ? realpath($filePath)
+	            : $filePath;
 
             // fallback just in case but this really should not happen
             if (false === $realPath) {
@@ -275,6 +277,22 @@ class ClassMapGenerator
     {
         return strpos($path, '/') === 0 || substr($path, 1, 1) === ':' || strpos($path, '\\\\') === 0;
     }
+
+	/**
+	 * Determine if a path is a stream wrapper. All stream wrappers are absolute paths.
+	 *
+	 * @param string $path
+	 *
+	 * @return bool
+	 */
+	private static function isStreamWrapper(string $path) {
+		foreach(stream_get_wrappers() as $wrapper) {
+			if (strpos($path, $wrapper.'://') === 0) {
+				return true;
+			}
+		}
+		return false;
+	}
 
     /**
      * Normalize a path. This replaces backslashes with slashes, removes ending
