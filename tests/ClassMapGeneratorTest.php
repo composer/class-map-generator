@@ -212,16 +212,6 @@ class ClassMapGeneratorTest extends TestCase
 				return $this->resource === false ? false :
 					fstat($this->resource);
 			}
-
-			/**
-			 * @param string $path
-			 * @param int $flags
-			 *
-			 * @return array|false
-			 */
-			public function url_stat($path, $flags) {
-				return stat($this->real);
-			}
 		};
 
 		$testProxyStreamWrapper::$rootPath = realpath(__DIR__) . '/Fixtures/classmap';
