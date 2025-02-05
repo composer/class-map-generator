@@ -182,13 +182,13 @@ class ClassMapGeneratorTest extends TestCase
              *
              * @return bool
              */
-            public function stream_open( $path, $mode, $options, &$opened_path ) {
-                $scheme  = parse_url( $path, PHP_URL_SCHEME );
-                $varname = str_replace( $scheme . '://', '', $path );
+            public function stream_open($path, $mode, $options, &$opened_path) {
+                $scheme  = parse_url($path, PHP_URL_SCHEME);
+                $varname = str_replace($scheme . '://', '', $path);
 
                 $this->real = 'file://' . self::$rootPath . '/' . $varname;
 
-                $this->resource = fopen( $this->real, $mode );
+                $this->resource = fopen($this->real, $mode);
 
                 return (bool) $this->resource;
             }
@@ -198,26 +198,24 @@ class ClassMapGeneratorTest extends TestCase
              *
              * @return false|string
              */
-            public function stream_read( $count ) {
-                return $this->resource === false ? false :
-                    fgets( $this->resource, $count );
+            public function stream_read($count) {
+                return $this->resource === false ? false : fgets($this->resource, (int) $count);
             }
 
             /**
              * @return array<int|string, int>|false
              */
             public function stream_stat() {
-                return $this->resource === false ? false :
-                    fstat( $this->resource );
+                return $this->resource === false ? false : fstat($this->resource);
             }
         };
 
-        $testProxyStreamWrapper::$rootPath = realpath( __DIR__ ) . '/Fixtures/classmap';
-        stream_wrapper_register( 'test', get_class( $testProxyStreamWrapper ) );
+        $testProxyStreamWrapper::$rootPath = realpath(__DIR__) . '/Fixtures/classmap';
+        stream_wrapper_register('test', get_class($testProxyStreamWrapper));
 
         $arrayOfSplFileInfoStreamPaths = [
-            new \SplFileInfo( 'test://BackslashLineEndingString.php' ),
-            new \SplFileInfo( 'test://InvalidUnicode.php' ),
+            new \SplFileInfo('test://BackslashLineEndingString.php'),
+            new \SplFileInfo('test://InvalidUnicode.php'),
         ];
 
         self::assertSame(
@@ -227,7 +225,7 @@ class ClassMapGeneratorTest extends TestCase
                 'Smarty_Internal_Compile_Block'      => 'test://InvalidUnicode.php',
                 'Smarty_Internal_Compile_Blockclose' => 'test://InvalidUnicode.php',
             ],
-            ClassMapGenerator::createMap( $arrayOfSplFileInfoStreamPaths )
+            ClassMapGenerator::createMap($arrayOfSplFileInfoStreamPaths)
         );
     }
 
