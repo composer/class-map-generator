@@ -45,6 +45,11 @@ class ClassMapGenerator
      */
     private $classMap;
 
+    /*
+     * @var string
+     */
+    private $streamWrappers;
+
     /**
      * @param list<string> $extensions File extensions to scan for classes in the given paths
      */
@@ -52,6 +57,7 @@ class ClassMapGenerator
     {
         $this->extensions = $extensions;
         $this->classMap = new ClassMap;
+        $this->streamWrappers = implode('|', stream_get_wrappers());
     }
 
     /**
@@ -142,18 +148,18 @@ class ClassMapGenerator
                 continue;
             }
 
-            if (!self::isAbsolutePath($filePath) && !self::isStreamWrapper($filePath)) {
+            if (!self::isAbsolutePath($filePath) && !Preg::isMatch('{^('.$this->streamWrappers.')://}', $filePath)) {
                 $filePath = $cwd . '/' . $filePath;
                 $filePath = self::normalizePath($filePath);
-            } elseif(!self::isStreamWrapper($filePath)) {
-                $filePath = Preg::replace('{[\\\\/]{2,}}', '/', $filePath);
+            } else {
+                $filePath = Preg::replace('{(?<!:)[\\\\/]{2,}}', '/', $filePath);
             }
 
             if ('' === $filePath) {
                 throw new \LogicException('Got an empty $filePath for '.$file->getPathname());
             }
 
-            $realPath = !self::isStreamWrapper($filePath)
+            $realPath = !Preg::isMatch('{^('.$this->streamWrappers.')://}', $filePath)
 	            ? realpath($filePath)
 	            : $filePath;
 
@@ -277,22 +283,6 @@ class ClassMapGenerator
     {
         return strpos($path, '/') === 0 || substr($path, 1, 1) === ':' || strpos($path, '\\\\') === 0;
     }
-
-	/**
-	 * Determine if a path is a stream wrapper. All stream wrappers are absolute paths.
-	 *
-	 * @param string $path
-	 *
-	 * @return bool
-	 */
-	private static function isStreamWrapper(string $path) {
-		foreach(stream_get_wrappers() as $wrapper) {
-			if (strpos($path, $wrapper.'://') === 0) {
-				return true;
-			}
-		}
-		return false;
-	}
 
     /**
      * Normalize a path. This replaces backslashes with slashes, removes ending
