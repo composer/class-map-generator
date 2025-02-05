@@ -57,7 +57,7 @@ class ClassMapGenerator
     {
         $this->extensions = $extensions;
         $this->classMap = new ClassMap;
-        $this->streamWrappersRegex = sprintf('{^(%s)://}', implode('|', stream_get_wrappers()));
+        $this->streamWrappersRegex = sprintf('{^(?:%s)://}', implode('|', array_map('preg_quote', stream_get_wrappers())));
     }
 
     /**
@@ -148,7 +148,8 @@ class ClassMapGenerator
                 continue;
             }
 
-            if (!self::isAbsolutePath($filePath) && !Preg::isMatch($this->streamWrappersRegex, $filePath)) {
+            $isStreamWrapperPath = Preg::isMatch($this->streamWrappersRegex, $filePath);
+            if (!self::isAbsolutePath($filePath) && !$isStreamWrapperPath) {
                 $filePath = $cwd . '/' . $filePath;
                 $filePath = self::normalizePath($filePath);
             } else {
@@ -159,9 +160,9 @@ class ClassMapGenerator
                 throw new \LogicException('Got an empty $filePath for '.$file->getPathname());
             }
 
-            $realPath = !Preg::isMatch($this->streamWrappersRegex, $filePath)
-                ? realpath($filePath)
-                : $filePath;
+            $realPath = $isStreamWrapperPath
+                ? $filePath
+                : realpath($filePath);
 
             // fallback just in case but this really should not happen
             if (false === $realPath) {
