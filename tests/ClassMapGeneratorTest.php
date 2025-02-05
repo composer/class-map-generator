@@ -149,89 +149,87 @@ class ClassMapGeneratorTest extends TestCase
         ), ClassMapGenerator::createMap($finder));
     }
 
-	/**
-	 * @see ClassMapGenerator::isStreamWrapper()
-	 */
-	public function testStreamWrapperSupport(): void {
+    /**
+     * @see ClassMapGenerator::isStreamWrapper()
+     */
+    public function testStreamWrapperSupport(): void {
 
-		/**
-		 * A stream wrapper that given `test://myfile.php` will read `test://path/to/myfile.php` where `path/to` is
-		 * set on the `$rootPath` static variable.
-		 */
-		$testProxyStreamWrapper = new class() {
-			/**
-			 * @var string
-			 */
-			public static $rootPath;
+        /**
+         * A stream wrapper that given `test://myfile.php` will read `test://path/to/myfile.php` where `path/to` is
+         * set on the `$rootPath` static variable.
+         */
+        $testProxyStreamWrapper = new class() {
+            /**
+             * @var string
+             */
+            public static $rootPath;
 
-			/**
-			 * @var string
-			 */
-			protected $real;
+            /**
+             * @var string
+             */
+            protected $real;
 
-			/**
-			 * @var resource|false
-			 */
-			protected $resource;
+            /**
+             * @var resource|false
+             */
+            protected $resource;
 
-			/**
-			 * @param string $path
-			 * @param string $mode
-			 * @param int $options
-			 * @param ?string $opened_path
-			 *
-			 * @return bool
-			 */
-			public function stream_open($path, $mode, $options, &$opened_path)
-			{
-				$scheme = parse_url($path, PHP_URL_SCHEME);
-				$varname = str_replace( $scheme . '://', '', $path );
+            /**
+             * @param string $path
+             * @param string $mode
+             * @param int $options
+             * @param ?string $opened_path
+             *
+             * @return bool
+             */
+            public function stream_open( $path, $mode, $options, &$opened_path ) {
+                $scheme  = parse_url( $path, PHP_URL_SCHEME );
+                $varname = str_replace( $scheme . '://', '', $path );
 
-				$this->real = 'file://' . self::$rootPath . '/' . $varname;
+                $this->real = 'file://' . self::$rootPath . '/' . $varname;
 
-				$this->resource = fopen($this->real, $mode);
+                $this->resource = fopen( $this->real, $mode );
 
-				return (bool) $this->resource;
-			}
+                return (bool) $this->resource;
+            }
 
-			/**
-			 * @param int<0, max>|null $count
-			 *
-			 * @return false|string
-			 */
-			public function stream_read($count)
-			{
-				return $this->resource === false ? false :
-					fgets($this->resource, $count);
-			}
+            /**
+             * @param int<0, max>|null $count
+             *
+             * @return false|string
+             */
+            public function stream_read( $count ) {
+                return $this->resource === false ? false :
+                    fgets( $this->resource, $count );
+            }
 
-			/**
-			 * @return array<int|string, int>|false
-			 */
-			public function stream_stat() {
-				return $this->resource === false ? false :
-					fstat($this->resource);
-			}
-		};
+            /**
+             * @return array<int|string, int>|false
+             */
+            public function stream_stat() {
+                return $this->resource === false ? false :
+                    fstat( $this->resource );
+            }
+        };
 
-		$testProxyStreamWrapper::$rootPath = realpath(__DIR__) . '/Fixtures/classmap';
-		stream_wrapper_register( 'test', get_class( $testProxyStreamWrapper ) );
+        $testProxyStreamWrapper::$rootPath = realpath( __DIR__ ) . '/Fixtures/classmap';
+        stream_wrapper_register( 'test', get_class( $testProxyStreamWrapper ) );
 
-		$arrayOfSplFileInfoStreamPaths = [
-			new \SplFileInfo( 'test://BackslashLineEndingString.php'),
-			new \SplFileInfo( 'test://InvalidUnicode.php'),
-		];
+        $arrayOfSplFileInfoStreamPaths = [
+            new \SplFileInfo( 'test://BackslashLineEndingString.php' ),
+            new \SplFileInfo( 'test://InvalidUnicode.php' ),
+        ];
 
-		self::assertSame(
-			[
-				'Foo\\SlashedA' => 'test://BackslashLineEndingString.php',
-				'Foo\\SlashedB' => 'test://BackslashLineEndingString.php',
-				'Smarty_Internal_Compile_Block' => 'test://InvalidUnicode.php',
-				'Smarty_Internal_Compile_Blockclose' => 'test://InvalidUnicode.php',
-			],
-			ClassMapGenerator::createMap($arrayOfSplFileInfoStreamPaths)
-		);
-	}
+        self::assertSame(
+            [
+                'Foo\\SlashedA'                      => 'test://BackslashLineEndingString.php',
+                'Foo\\SlashedB'                      => 'test://BackslashLineEndingString.php',
+                'Smarty_Internal_Compile_Block'      => 'test://InvalidUnicode.php',
+                'Smarty_Internal_Compile_Blockclose' => 'test://InvalidUnicode.php',
+            ],
+            ClassMapGenerator::createMap( $arrayOfSplFileInfoStreamPaths )
+        );
+    }
 
     public function testAmbiguousReference(): void
     {
