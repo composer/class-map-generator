@@ -206,7 +206,7 @@ class ClassMapGeneratorTest extends TestCase
 			}
 
 			/**
-			 * @return array|false
+			 * @return array<int|string, int>|false
 			 */
 			public function stream_stat() {
 				return $this->resource === false ? false :
