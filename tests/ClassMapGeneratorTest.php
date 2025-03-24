@@ -422,7 +422,7 @@ class ClassMapGeneratorTest extends TestCase
             if (!file_exists($unique) && @mkdir($unique, 0777)) {
                 return (string) realpath($unique);
             }
-        } while (--$attempts);
+        } while (--$attempts > 0);
 
         throw new \RuntimeException('Failed to create a unique temporary directory.');
     }
