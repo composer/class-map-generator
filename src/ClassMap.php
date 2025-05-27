@@ -12,12 +12,15 @@
 
 namespace Composer\ClassMapGenerator;
 
+use Countable;
+use InvalidArgumentException;
+use OutOfBoundsException;
 use Composer\Pcre\Preg;
 
 /**
  * @author Jordi Boggiano <j.boggiano@seld.be>
  */
-class ClassMap implements \Countable
+class ClassMap implements Countable
 {
     /**
      * @var array<class-string, non-empty-string>
@@ -89,15 +92,15 @@ class ClassMap implements \Countable
         }
 
         if (true === $duplicatesFilter) {
-            throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
+            throw new InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
         }
 
         $ambiguousClasses = [];
         foreach ($this->ambiguousClasses as $class => $paths) {
-            $paths = array_filter($paths, function ($path) use ($duplicatesFilter) {
+            $paths = array_filter($paths, function ($path) use ($duplicatesFilter): bool {
                 return !Preg::isMatch($duplicatesFilter, strtr($path, '\\', '/'));
             });
-            if (\count($paths) > 0) {
+            if ($paths !== []) {
                 $ambiguousClasses[$class] = array_values($paths);
             }
         }
@@ -131,7 +134,7 @@ class ClassMap implements \Countable
     public function getClassPath(string $className): string
     {
         if (!isset($this->map[$className])) {
-            throw new \OutOfBoundsException('Class '.$className.' is not present in the map');
+            throw new OutOfBoundsException('Class '.$className.' is not present in the map');
         }
 
         return $this->map[$className];
