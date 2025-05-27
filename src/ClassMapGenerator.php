@@ -147,7 +147,7 @@ class ClassMapGenerator
             }
         }
 
-        $cwd = realpath($this->getCwd());
+        $cwd = realpath(self::getCwd());
 
         foreach ($path as $file) {
             $filePath = $file->getPathname();
@@ -156,9 +156,9 @@ class ClassMapGenerator
             }
 
             $isStreamWrapperPath = Preg::isMatch($this->streamWrappersRegex, $filePath);
-            if (!$this->isAbsolutePath($filePath) && !$isStreamWrapperPath) {
+            if (!self::isAbsolutePath($filePath) && !$isStreamWrapperPath) {
                 $filePath = $cwd . '/' . $filePath;
-                $filePath = $this->normalizePath($filePath);
+                $filePath = self::normalizePath($filePath);
             } else {
                 $filePath = Preg::replace('{(?<!:)[\\\\/]{2,}}', '/', $filePath);
             }
@@ -264,14 +264,14 @@ class ClassMapGenerator
 
         // warn only if no valid classes, else silently skip invalid
         if ($validClasses === []) {
-            $cwd = realpath($this->getCwd());
+            $cwd = realpath(self::getCwd());
             if ($cwd === false) {
-                $cwd = $this->getCwd();
+                $cwd = self::getCwd();
             }
 
-            $cwd = $this->normalizePath($cwd);
-            $shortPath = Preg::replace('{^'.preg_quote($cwd).'}', '.', $this->normalizePath($filePath), 1);
-            $shortBasePath = Preg::replace('{^'.preg_quote($cwd).'}', '.', $this->normalizePath($basePath), 1);
+            $cwd = self::normalizePath($cwd);
+            $shortPath = Preg::replace('{^'.preg_quote($cwd).'}', '.', self::normalizePath($filePath), 1);
+            $shortBasePath = Preg::replace('{^'.preg_quote($cwd).'}', '.', self::normalizePath($basePath), 1);
 
             foreach ($rejectedClasses as $class) {
                 $this->classMap->addPsrViolation(sprintf('Class %s located in %s does not comply with %s autoloading standard (rule: %s => %s). Skipping.', $class, $shortPath, $namespaceType, $baseNamespace, $shortBasePath), $class, $filePath);
@@ -288,7 +288,7 @@ class ClassMapGenerator
      *
      * @see Composer\Util\Filesystem::isAbsolutePath
      */
-    private function isAbsolutePath(string $path): bool
+    private static function isAbsolutePath(string $path): bool
     {
         return strpos($path, '/') === 0 || substr($path, 1, 1) === ':' || strpos($path, '\\\\') === 0;
     }
@@ -301,7 +301,7 @@ class ClassMapGenerator
      *
      * @param  string $path Path to the file or directory
      */
-    private function normalizePath(string $path): string
+    private static function normalizePath(string $path): string
     {
         $parts = [];
         $path = strtr($path, '\\', '/');
@@ -345,7 +345,7 @@ class ClassMapGenerator
     /**
      * @see Composer\Util\Platform::getCwd
      */
-    private function getCwd(): string
+    private static function getCwd(): string
     {
         $cwd = getcwd();
 
