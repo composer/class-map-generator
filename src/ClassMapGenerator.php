@@ -18,6 +18,11 @@
 
 namespace Composer\ClassMapGenerator;
 
+use InvalidArgumentException;
+use SplFileInfo;
+use RuntimeException;
+use LogicException;
+use Traversable;
 use Composer\Pcre\Preg;
 use Symfony\Component\Finder\Finder;
 use Composer\IO\IOInterface;
@@ -33,17 +38,17 @@ class ClassMapGenerator
     /**
      * @var list<string>
      */
-    private $extensions;
+    private array $extensions = [];
 
     /**
      * @var FileList|null
      */
-    private $scannedFiles = null;
+    private ?FileList $scannedFiles = null;
 
     /**
      * @var ClassMap
      */
-    private $classMap;
+    private ClassMap $classMap;
 
     /**
      * @var non-empty-string
@@ -77,10 +82,10 @@ class ClassMapGenerator
     /**
      * Iterate over all files in the given directory searching for classes
      *
-     * @param string|\Traversable<\SplFileInfo>|array<\SplFileInfo> $path The path to search in or an array/traversable of SplFileInfo (e.g. symfony/finder instance)
+     * @param string|Traversable<SplFileInfo>|array<SplFileInfo> $path The path to search in or an array/traversable of SplFileInfo (e.g. symfony/finder instance)
      * @return array<class-string, non-empty-string> A class map array
      *
-     * @throws \RuntimeException When the path is neither an existing file nor directory
+     * @throws RuntimeException When the path is neither an existing file nor directory
      */
     public static function createMap($path): array
     {
@@ -99,33 +104,35 @@ class ClassMapGenerator
     /**
      * Iterate over all files in the given directory searching for classes
      *
-     * @param string|\Traversable<\SplFileInfo>|array<\SplFileInfo> $path         The path to search in or an array/traversable of SplFileInfo (e.g. symfony/finder instance)
+     * @param string|Traversable<SplFileInfo>|array<SplFileInfo> $path The path to search in or an array/traversable of SplFileInfo (e.g. symfony/finder instance)
      * @param non-empty-string|null                                 $excluded     Regex that matches file paths to be excluded from the classmap
      * @param 'classmap'|'psr-0'|'psr-4'                            $autoloadType Optional autoload standard to use mapping rules with the namespace instead of purely doing a classmap
      * @param string|null                                           $namespace    Optional namespace prefix to filter by, only for psr-0/psr-4 autoloading
      * @param array<string>                                         $excludedDirs Optional dirs to exclude from search relative to $path
      *
-     * @throws \RuntimeException When the path is neither an existing file nor directory
+     * @throws RuntimeException When the path is neither an existing file nor directory
      */
     public function scanPaths($path, ?string $excluded = null, string $autoloadType = 'classmap', ?string $namespace = null, array $excludedDirs = []): void
     {
         if (!in_array($autoloadType, ['psr-0', 'psr-4', 'classmap'], true)) {
-            throw new \InvalidArgumentException('$autoloadType must be one of: "psr-0", "psr-4" or "classmap"');
+            throw new InvalidArgumentException('$autoloadType must be one of: "psr-0", "psr-4" or "classmap"');
         }
 
         if ('classmap' !== $autoloadType) {
             if (!is_string($path)) {
-                throw new \InvalidArgumentException('$path must be a string when specifying a psr-0 or psr-4 autoload type');
+                throw new InvalidArgumentException('$path must be a string when specifying a psr-0 or psr-4 autoload type');
             }
+
             if (!is_string($namespace)) {
-                throw new \InvalidArgumentException('$namespace must be given (even if it is an empty string if you do not want to filter) when specifying a psr-0 or psr-4 autoload type');
+                throw new InvalidArgumentException('$namespace must be given (even if it is an empty string if you do not want to filter) when specifying a psr-0 or psr-4 autoload type');
             }
+
             $basePath = $path;
         }
 
         if (is_string($path)) {
             if (is_file($path)) {
-                $path = [new \SplFileInfo($path)];
+                $path = [new SplFileInfo($path)];
             } elseif (is_dir($path) || strpos($path, '*') !== false) {
                 $path = Finder::create()
                     ->files()
@@ -134,13 +141,13 @@ class ClassMapGenerator
                     ->in($path)
                     ->exclude($excludedDirs);
             } else {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     'Could not scan for classes inside "'.$path.'" which does not appear to be a file nor a folder'
                 );
             }
         }
 
-        $cwd = realpath(self::getCwd());
+        $cwd = realpath($this->getCwd());
 
         foreach ($path as $file) {
             $filePath = $file->getPathname();
@@ -149,15 +156,15 @@ class ClassMapGenerator
             }
 
             $isStreamWrapperPath = Preg::isMatch($this->streamWrappersRegex, $filePath);
-            if (!self::isAbsolutePath($filePath) && !$isStreamWrapperPath) {
+            if (!$this->isAbsolutePath($filePath) && !$isStreamWrapperPath) {
                 $filePath = $cwd . '/' . $filePath;
-                $filePath = self::normalizePath($filePath);
+                $filePath = $this->normalizePath($filePath);
             } else {
                 $filePath = Preg::replace('{(?<!:)[\\\\/]{2,}}', '/', $filePath);
             }
 
             if ('' === $filePath) {
-                throw new \LogicException('Got an empty $filePath for '.$file->getPathname());
+                throw new LogicException('Got an empty $filePath for '.$file->getPathname());
             }
 
             $realPath = $isStreamWrapperPath
@@ -166,7 +173,7 @@ class ClassMapGenerator
 
             // fallback just in case but this really should not happen
             if (false === $realPath) {
-                throw new \RuntimeException('realpath of '.$filePath.' failed to resolve, got false');
+                throw new RuntimeException('realpath of '.$filePath.' failed to resolve, got false');
             }
 
             // if a list of scanned files is given, avoid scanning twice the same file to save cycles and avoid generating warnings
@@ -179,6 +186,7 @@ class ClassMapGenerator
             if (null !== $excluded && Preg::isMatch($excluded, strtr($realPath, '\\', '/'))) {
                 continue;
             }
+
             // check non-realpath of file for directories symlink in project dir
             if (null !== $excluded && Preg::isMatch($excluded, strtr($filePath, '\\', '/'))) {
                 continue;
@@ -189,7 +197,7 @@ class ClassMapGenerator
                 $classes = $this->filterByNamespace($classes, $filePath, $namespace, $autoloadType, $basePath);
 
                 // if no valid class was found in the file then we do not mark it as scanned as it might still be matched by another rule later
-                if (\count($classes) > 0 && $this->scannedFiles !== null) {
+                if ($classes !== [] && $this->scannedFiles !== null) {
                     $this->scannedFiles->add($realPath);
                 }
             } elseif ($this->scannedFiles !== null) {
@@ -217,7 +225,7 @@ class ClassMapGenerator
      * @param  string                   $basePath      root directory of given autoload mapping
      * @return array<int, class-string> valid classes
      *
-     * @throws \InvalidArgumentException When namespaceType is neither psr-0 nor psr-4
+     * @throws InvalidArgumentException When namespaceType is neither psr-0 nor psr-4
      */
     private function filterByNamespace(array $classes, string $filePath, string $baseNamespace, string $namespaceType, string $basePath): array
     {
@@ -244,26 +252,29 @@ class ClassMapGenerator
                 $subNamespace = ('' !== $baseNamespace) ? substr($class, strlen($baseNamespace)) : $class;
                 $subPath = str_replace('\\', DIRECTORY_SEPARATOR, $subNamespace);
             } else {
-                throw new \InvalidArgumentException('$namespaceType must be "psr-0" or "psr-4"');
+                throw new InvalidArgumentException('$namespaceType must be "psr-0" or "psr-4"');
             }
+
             if ($subPath === $realSubPath) {
                 $validClasses[] = $class;
             } else {
                 $rejectedClasses[] = $class;
             }
         }
+
         // warn only if no valid classes, else silently skip invalid
-        if (\count($validClasses) === 0) {
-            $cwd = realpath(self::getCwd());
+        if ($validClasses === []) {
+            $cwd = realpath($this->getCwd());
             if ($cwd === false) {
-                $cwd = self::getCwd();
+                $cwd = $this->getCwd();
             }
-            $cwd = self::normalizePath($cwd);
-            $shortPath = Preg::replace('{^'.preg_quote($cwd).'}', '.', self::normalizePath($filePath), 1);
-            $shortBasePath = Preg::replace('{^'.preg_quote($cwd).'}', '.', self::normalizePath($basePath), 1);
+
+            $cwd = $this->normalizePath($cwd);
+            $shortPath = Preg::replace('{^'.preg_quote($cwd).'}', '.', $this->normalizePath($filePath), 1);
+            $shortBasePath = Preg::replace('{^'.preg_quote($cwd).'}', '.', $this->normalizePath($basePath), 1);
 
             foreach ($rejectedClasses as $class) {
-                $this->classMap->addPsrViolation("Class $class located in $shortPath does not comply with $namespaceType autoloading standard (rule: $baseNamespace => $shortBasePath). Skipping.", $class, $filePath);
+                $this->classMap->addPsrViolation(sprintf('Class %s located in %s does not comply with %s autoloading standard (rule: %s => %s). Skipping.', $class, $shortPath, $namespaceType, $baseNamespace, $shortBasePath), $class, $filePath);
             }
 
             return [];
@@ -276,11 +287,8 @@ class ClassMapGenerator
      * Checks if the given path is absolute
      *
      * @see Composer\Util\Filesystem::isAbsolutePath
-     *
-     * @param  string $path
-     * @return bool
      */
-    private static function isAbsolutePath(string $path)
+    private function isAbsolutePath(string $path): bool
     {
         return strpos($path, '/') === 0 || substr($path, 1, 1) === ':' || strpos($path, '\\\\') === 0;
     }
@@ -292,9 +300,8 @@ class ClassMapGenerator
      * @see Composer\Util\Filesystem::normalizePath
      *
      * @param  string $path Path to the file or directory
-     * @return string
      */
-    private static function normalizePath(string $path)
+    private function normalizePath(string $path): string
     {
         $parts = [];
         $path = strtr($path, '\\', '/');
@@ -322,7 +329,7 @@ class ClassMapGenerator
         foreach (explode('/', $path) as $chunk) {
             if ('..' === $chunk && (\strlen($absolute) > 0 || $up)) {
                 array_pop($parts);
-                $up = !(\count($parts) === 0 || '..' === end($parts));
+                $up = $parts !== [] && '..' !== end($parts);
             } elseif ('.' !== $chunk && '' !== $chunk) {
                 $parts[] = $chunk;
                 $up = '..' !== $chunk;
@@ -338,12 +345,12 @@ class ClassMapGenerator
     /**
      * @see Composer\Util\Platform::getCwd
      */
-    private static function getCwd(): string
+    private function getCwd(): string
     {
         $cwd = getcwd();
 
         if (false === $cwd) {
-            throw new \RuntimeException('Could not determine the current working directory');
+            throw new RuntimeException('Could not determine the current working directory');
         }
 
         return $cwd;
