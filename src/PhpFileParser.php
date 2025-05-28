@@ -12,6 +12,7 @@
 
 namespace Composer\ClassMapGenerator;
 
+use RuntimeException;
 use Composer\Pcre\Preg;
 
 /**
@@ -23,7 +24,7 @@ class PhpFileParser
      * Extract the classes in the given file
      *
      * @param  string            $path The file to check
-     * @throws \RuntimeException
+     * @throws RuntimeException
      * @return list<class-string> The found classes
      */
     public static function findClasses(string $path): array
@@ -31,8 +32,9 @@ class PhpFileParser
         $extraTypes = self::getExtraTypes();
 
         if (!function_exists('php_strip_whitespace')) {
-            throw new \RuntimeException('Classmap generation relies on the php_strip_whitespace function, but it has been disabled by the disable_functions directive.');
+            throw new RuntimeException('Classmap generation relies on the php_strip_whitespace function, but it has been disabled by the disable_functions directive.');
         }
+
         // Use @ here instead of Silencer to actively suppress 'unhelpful' output
         // @link https://github.com/composer/composer/pull/4886
         $contents = @php_strip_whitespace($path);
@@ -47,16 +49,19 @@ class PhpFileParser
             } else {
                 $message = 'File at "%s" could not be parsed as PHP, it may be binary or corrupted';
             }
+
             $error = error_get_last();
             if (isset($error['message'])) {
                 $message .= PHP_EOL . 'The following message may be helpful:' . PHP_EOL . $error['message'];
             }
-            throw new \RuntimeException(sprintf($message, $path));
+
+            throw new RuntimeException(sprintf($message, $path));
         }
 
         // return early if there is no chance of matching anything in this file
         Preg::matchAllStrictGroups('{\b(?:class|interface|trait'.$extraTypes.')\s}i', $contents, $matches);
-        if (0 === \count($matches)) {
+
+        if ([] === $matches) {
             return [];
         }
 
@@ -74,16 +79,20 @@ class PhpFileParser
         $classes = [];
         $namespace = '';
 
-        for ($i = 0, $len = count($matches['type']); $i < $len; $i++) {
+        for ($i = 0, $len = count($matches['type']); $i < $len; ++$i) {
             if (isset($matches['ns'][$i]) && $matches['ns'][$i] !== '') {
                 $namespace = str_replace([' ', "\t", "\r", "\n"], '', (string) $matches['nsname'][$i]) . '\\';
             } else {
                 $name = $matches['name'][$i];
                 assert(is_string($name));
                 // skip anon classes extending/implementing
-                if ($name === 'extends' || $name === 'implements') {
+                if ($name === 'extends') {
                     continue;
                 }
+                if ($name === 'implements') {
+                    continue;
+                }
+
                 if ($name[0] === ':') {
                     // This is an XHP class, https://github.com/facebook/xhp
                     $name = 'xhp'.substr(str_replace(['-', ':'], ['_', '__'], $name), 1);
@@ -101,6 +110,7 @@ class PhpFileParser
                         $name = substr($name, 0, $colonPos);
                     }
                 }
+
                 /** @var class-string */
                 $className = ltrim($namespace . $name, '\\');
                 $classes[] = $className;
@@ -110,9 +120,6 @@ class PhpFileParser
         return $classes;
     }
 
-    /**
-     * @return string
-     */
     private static function getExtraTypes(): string
     {
         static $extraTypes = null;
@@ -123,7 +130,7 @@ class PhpFileParser
                 $extraTypes .= '|enum';
             }
 
-            $extraTypesArray = array_filter(explode('|', $extraTypes), function (string $type) {
+            $extraTypesArray = array_filter(explode('|', $extraTypes), function (string $type): bool {
                 return $type !== '';
             });
             PhpFileCleaner::setTypeConfig(array_merge(['class', 'interface', 'trait'], $extraTypesArray));
@@ -140,7 +147,6 @@ class PhpFileParser
      *
      * @see Composer\Util\Filesystem::isReadable
      *
-     * @param  string $path
      * @return bool
      */
     private static function isReadable(string $path)
