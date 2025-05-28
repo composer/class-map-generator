@@ -43,7 +43,7 @@ class PhpFileParser
                 $message = 'File at "%s" is not readable, check its permissions';
             } elseif ('' === trim((string) file_get_contents($path))) {
                 // The input file was really empty and thus contains no classes
-                return array();
+                return [];
             } else {
                 $message = 'File at "%s" could not be parsed as PHP, it may be binary or corrupted';
             }
@@ -57,7 +57,7 @@ class PhpFileParser
         // return early if there is no chance of matching anything in this file
         Preg::matchAllStrictGroups('{\b(?:class|interface|trait'.$extraTypes.')\s}i', $contents, $matches);
         if (0 === \count($matches)) {
-            return array();
+            return [];
         }
 
         $p = new PhpFileCleaner($contents, count($matches[0]));
@@ -71,12 +71,12 @@ class PhpFileParser
             )
         }ix', $contents, $matches);
 
-        $classes = array();
+        $classes = [];
         $namespace = '';
 
         for ($i = 0, $len = count($matches['type']); $i < $len; $i++) {
             if (isset($matches['ns'][$i]) && $matches['ns'][$i] !== '') {
-                $namespace = str_replace(array(' ', "\t", "\r", "\n"), '', (string) $matches['nsname'][$i]) . '\\';
+                $namespace = str_replace([' ', "\t", "\r", "\n"], '', (string) $matches['nsname'][$i]) . '\\';
             } else {
                 $name = $matches['name'][$i];
                 assert(is_string($name));
@@ -86,7 +86,7 @@ class PhpFileParser
                 }
                 if ($name[0] === ':') {
                     // This is an XHP class, https://github.com/facebook/xhp
-                    $name = 'xhp'.substr(str_replace(array('-', ':'), array('_', '__'), $name), 1);
+                    $name = 'xhp'.substr(str_replace(['-', ':'], ['_', '__'], $name), 1);
                 } elseif (strtolower((string) $matches['type'][$i]) === 'enum') {
                     // something like:
                     //   enum Foo: int { HERP = '123'; }
