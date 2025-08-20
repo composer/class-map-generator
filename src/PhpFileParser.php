@@ -125,13 +125,12 @@ class PhpFileParser
 
         if (null === $extraTypes) {
             $extraTypes = '';
+            $extraTypesArray = [];
             if (PHP_VERSION_ID >= 80100 || (defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.3', '>='))) {
                 $extraTypes .= '|enum';
+                $extraTypesArray = ['enum'];
             }
 
-            $extraTypesArray = array_filter(explode('|', $extraTypes), function (string $type): bool {
-                return $type !== '';
-            });
             PhpFileCleaner::setTypeConfig(array_merge(['class', 'interface', 'trait'], $extraTypesArray));
         }
 
