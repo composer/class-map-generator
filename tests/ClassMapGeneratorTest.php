@@ -208,6 +208,32 @@ class ClassMapGeneratorTest extends TestCase
             public function stream_stat() {
                 return $this->resource === false ? false : fstat($this->resource);
             }
+
+            /**
+             * @return bool
+             */
+            public function stream_eof() {
+                return $this->resource === false ? true : feof($this->resource);
+            }
+
+            /**
+             * @return void
+             */
+            public function stream_close() {
+                if ($this->resource !== false) {
+                    fclose($this->resource);
+                }
+            }
+
+            /**
+             * @return array<int|string, int>|false
+             */
+            public function url_stat($path, $flags) {
+                $scheme  = parse_url($path, PHP_URL_SCHEME);
+                $varname = str_replace($scheme . '://', '', $path);
+
+                return stat(self::$rootPath . '/' . $varname);
+            }
         };
 
         $testProxyStreamWrapper::$rootPath = realpath(__DIR__) . '/Fixtures/classmap';
