@@ -228,7 +228,7 @@ class ClassMapGeneratorTest extends TestCase
             /**
              * @return array<int|string, int>|false
              */
-            public function url_stat($path, $flags) {
+            public function url_stat(string $path, int $flags) {
                 $scheme  = parse_url($path, PHP_URL_SCHEME);
                 $varname = str_replace($scheme . '://', '', $path);
 
