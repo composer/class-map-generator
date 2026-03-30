@@ -437,6 +437,38 @@ class ClassMapGeneratorTest extends TestCase
         self::assertEquals($expected, $actual, $message);
     }
 
+    public function testPsr0OptimizedClassmapRespectsNamespacePrefix(): void
+    {
+        $this->generator->scanPaths(
+            __DIR__ . '/Fixtures/psr0NamespacePrefix',
+            null,
+            'psr-0',
+            'Acme_'
+        );
+
+        $classMap = $this->generator->getClassMap();
+        $map = $classMap->getMap();
+
+        self::assertArrayHasKey('Acme_Utils_Helper', $map);
+        self::assertArrayHasKey('Acme_Logger', $map);
+
+        self::assertArrayNotHasKey('Other\\Controller\\Page', $map);
+        self::assertArrayNotHasKey('Other\\Widget', $map);
+
+        self::assertArrayNotHasKey('Other_Service', $map);
+
+        $violations = $classMap->getPsrViolations();
+        sort($violations);
+        self::assertSame(
+            [
+                'Class Other\\Controller\\Page located in ./tests/Fixtures/psr0NamespacePrefix/Other/Controller/Page.php does not comply with psr-0 autoloading standard (rule: Acme_ => ./tests/Fixtures/psr0NamespacePrefix). Skipping.',
+                'Class Other\\Widget located in ./tests/Fixtures/psr0NamespacePrefix/Other/Widget.php does not comply with psr-0 autoloading standard (rule: Acme_ => ./tests/Fixtures/psr0NamespacePrefix). Skipping.',
+                'Class Other_Service located in ./tests/Fixtures/psr0NamespacePrefix/Other/Service.php does not comply with psr-0 autoloading standard (rule: Acme_ => ./tests/Fixtures/psr0NamespacePrefix). Skipping.',
+            ],
+            $violations
+        );
+    }
+
     public static function getUniqueTmpDirectory(): string
     {
         $attempts = 5;
