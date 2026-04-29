@@ -24,7 +24,7 @@ class PhpFileCleaner
     private static $typeConfig;
 
     /** @var non-empty-string */
-    private static $restPattern;
+    private static $rejectChars;
 
     /**
      * @readonly
@@ -60,7 +60,7 @@ class PhpFileCleaner
             ];
         }
 
-        self::$restPattern = '{[^?"\'</'.implode('', array_keys(self::$typeConfig)).']+}A';
+        self::$rejectChars = '?"\'</'.implode('', array_keys(self::$typeConfig));
     }
 
     public function __construct(string $contents, int $maxMatches)
@@ -128,9 +128,10 @@ class PhpFileCleaner
                 }
 
                 $this->index += 1;
-                if ($this->match(self::$restPattern, $match)) {
-                    $clean .= $char . $match[0];
-                    $this->index += \strlen($match[0]);
+                $skip = strcspn($this->contents, self::$rejectChars, $this->index);
+                if ($skip > 0) {
+                    $clean .= $char . \substr($this->contents, $this->index, $skip);
+                    $this->index += $skip;
                 } else {
                     $clean .= $char;
                 }
