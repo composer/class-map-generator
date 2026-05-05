@@ -45,7 +45,6 @@ class ClassMapGeneratorTest extends TestCase
 
     /**
      * @dataProvider getTestCreateMapTests
-     * @param string $directory
      * @param array<string, string> $expected
      */
     public function testCreateMap(string $directory, array $expected): void
@@ -58,7 +57,7 @@ class ClassMapGeneratorTest extends TestCase
      */
     public function getTestCreateMapTests(): array
     {
-        $classmap = array(
+        $classmap = [
             'Foo\\Bar\\A' => realpath(__DIR__) . '/Fixtures/classmap/sameNsMultipleClasses.php',
             'Foo\\Bar\\B' => realpath(__DIR__) . '/Fixtures/classmap/sameNsMultipleClasses.php',
             'Alpha\\A' => realpath(__DIR__) . '/Fixtures/classmap/multipleNs.php',
@@ -84,55 +83,55 @@ class ClassMapGeneratorTest extends TestCase
             'Smarty_Internal_Compile_Block' => realpath(__DIR__) . '/Fixtures/classmap/InvalidUnicode.php',
             'Smarty_Internal_Compile_Blockclose' => realpath(__DIR__) . '/Fixtures/classmap/InvalidUnicode.php',
             'ShortOpenTagDocblock' => realpath(__DIR__) . '/Fixtures/classmap/ShortOpenTagDocblock.php',
-        );
+        ];
 
-        $data = array(
-            array(__DIR__ . '/Fixtures/Namespaced', array(
+        $data = [
+            [__DIR__ . '/Fixtures/Namespaced', [
                 'Namespaced\\Bar' => realpath(__DIR__) . '/Fixtures/Namespaced/Bar.inc',
                 'Namespaced\\Foo' => realpath(__DIR__) . '/Fixtures/Namespaced/Foo.php',
                 'Namespaced\\Baz' => realpath(__DIR__) . '/Fixtures/Namespaced/Baz.php',
-            )),
-            array(__DIR__ . '/Fixtures/beta/NamespaceCollision', array(
+            ]],
+            [__DIR__ . '/Fixtures/beta/NamespaceCollision', [
                 'NamespaceCollision\\A\\B\\Bar' => realpath(__DIR__) . '/Fixtures/beta/NamespaceCollision/A/B/Bar.php',
                 'NamespaceCollision\\A\\B\\Foo' => realpath(__DIR__) . '/Fixtures/beta/NamespaceCollision/A/B/Foo.php',
-            )),
-            array(__DIR__ . '/Fixtures/Pearlike', array(
+            ]],
+            [__DIR__ . '/Fixtures/Pearlike', [
                 'Pearlike_Foo' => realpath(__DIR__) . '/Fixtures/Pearlike/Foo.php',
                 'Pearlike_Bar' => realpath(__DIR__) . '/Fixtures/Pearlike/Bar.php',
                 'Pearlike_Baz' => realpath(__DIR__) . '/Fixtures/Pearlike/Baz.php',
-            )),
-            array(__DIR__ . '/Fixtures/classmap', $classmap),
-            array(__DIR__ . '/Fixtures/template', array()),
-        );
+            ]],
+            [__DIR__ . '/Fixtures/classmap', $classmap],
+            [__DIR__ . '/Fixtures/template', []],
+        ];
 
-        $data[] = array(__DIR__ . '/Fixtures/php5.4', array(
+        $data[] = [__DIR__ . '/Fixtures/php5.4', [
             'TFoo' => __DIR__ . '/Fixtures/php5.4/traits.php',
             'CFoo' => __DIR__ . '/Fixtures/php5.4/traits.php',
             'Foo\\TBar' => __DIR__ . '/Fixtures/php5.4/traits.php',
             'Foo\\IBar' => __DIR__ . '/Fixtures/php5.4/traits.php',
             'Foo\\TFooBar' => __DIR__ . '/Fixtures/php5.4/traits.php',
             'Foo\\CBar' => __DIR__ . '/Fixtures/php5.4/traits.php',
-        ));
+        ]];
 
-        $data[] = array(__DIR__ . '/Fixtures/php7.0', array(
+        $data[] = [__DIR__ . '/Fixtures/php7.0', [
             'Dummy\Test\AnonClassHolder' => __DIR__ . '/Fixtures/php7.0/anonclass.php',
-        ));
+        ]];
 
         if (PHP_VERSION_ID >= 80100) {
-            $data[] = array(__DIR__ . '/Fixtures/php8.1', array(
+            $data[] = [__DIR__ . '/Fixtures/php8.1', [
                 'RolesBasicEnum' => __DIR__ . '/Fixtures/php8.1/enum_basic.php',
                 'RolesBackedEnum' => __DIR__ . '/Fixtures/php8.1/enum_backed.php',
                 'RolesClassLikeEnum' => __DIR__ . '/Fixtures/php8.1/enum_class_semantics.php',
                 'Foo\Bar\RolesClassLikeNamespacedEnum' => __DIR__ . '/Fixtures/php8.1/enum_namespaced.php',
-            ));
+            ]];
         }
 
-        if (defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.3', '>=')) {
-            $data[] = array(__DIR__ . '/Fixtures/hhvm3.3', array(
+        if (\defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.3', '>=')) {
+            $data[] = [__DIR__ . '/Fixtures/hhvm3.3', [
                 'FooEnum' => __DIR__ . '/Fixtures/hhvm3.3/HackEnum.php',
                 'Foo\BarEnum' => __DIR__ . '/Fixtures/hhvm3.3/NamespacedHackEnum.php',
                 'GenericsClass' => __DIR__ . '/Fixtures/hhvm3.3/Generics.php',
-            ));
+            ]];
         }
 
         return $data;
@@ -143,16 +142,17 @@ class ClassMapGeneratorTest extends TestCase
         $finder = new Finder();
         $finder->files()->in(__DIR__ . '/Fixtures/beta/NamespaceCollision');
 
-        self::assertEqualsNormalized(array(
+        self::assertEqualsNormalized([
             'NamespaceCollision\\A\\B\\Bar' => realpath(__DIR__) . '/Fixtures/beta/NamespaceCollision/A/B/Bar.php',
             'NamespaceCollision\\A\\B\\Foo' => realpath(__DIR__) . '/Fixtures/beta/NamespaceCollision/A/B/Foo.php',
-        ), ClassMapGenerator::createMap($finder));
+        ], ClassMapGenerator::createMap($finder));
     }
 
     /**
      * @see ClassMapGenerator::isStreamWrapper()
      */
-    public function testStreamWrapperSupport(): void {
+    public function testStreamWrapperSupport(): void
+    {
 
         /**
          * A stream wrapper that given `test://myfile.php` will read `test://path/to/myfile.php` where `path/to` is
@@ -182,8 +182,9 @@ class ClassMapGeneratorTest extends TestCase
              *
              * @return bool
              */
-            public function stream_open($path, $mode, $options, &$opened_path) {
-                $scheme  = parse_url($path, PHP_URL_SCHEME);
+            public function stream_open($path, $mode, $options, &$opened_path)
+            {
+                $scheme = parse_url($path, PHP_URL_SCHEME);
                 $varname = str_replace($scheme . '://', '', $path);
 
                 $this->real = 'file://' . self::$rootPath . '/' . $varname;
@@ -198,28 +199,32 @@ class ClassMapGeneratorTest extends TestCase
              *
              * @return false|string
              */
-            public function stream_read($count) {
+            public function stream_read($count)
+            {
                 return $this->resource === false ? false : fgets($this->resource, (int) $count);
             }
 
             /**
              * @return array<int|string, int>|false
              */
-            public function stream_stat() {
+            public function stream_stat()
+            {
                 return $this->resource === false ? false : fstat($this->resource);
             }
 
             /**
              * @return bool
              */
-            public function stream_eof() {
+            public function stream_eof()
+            {
                 return $this->resource === false ? true : feof($this->resource);
             }
 
             /**
              * @return void
              */
-            public function stream_close() {
+            public function stream_close()
+            {
                 if ($this->resource !== false) {
                     fclose($this->resource);
                 }
@@ -228,8 +233,9 @@ class ClassMapGeneratorTest extends TestCase
             /**
              * @return array<int|string, int>|false
              */
-            public function url_stat(string $path, int $flags) {
-                $scheme  = parse_url($path, PHP_URL_SCHEME);
+            public function url_stat(string $path, int $flags)
+            {
+                $scheme = parse_url($path, PHP_URL_SCHEME);
                 $varname = str_replace($scheme . '://', '', $path);
 
                 return stat(self::$rootPath . '/' . $varname);
@@ -237,7 +243,7 @@ class ClassMapGeneratorTest extends TestCase
         };
 
         $testProxyStreamWrapper::$rootPath = realpath(__DIR__) . '/Fixtures/classmap';
-        stream_wrapper_register('test', get_class($testProxyStreamWrapper));
+        stream_wrapper_register('test', \get_class($testProxyStreamWrapper));
 
         $arrayOfSplFileInfoStreamPaths = [
             new \SplFileInfo('test://BackslashLineEndingString.php'),
@@ -246,9 +252,9 @@ class ClassMapGeneratorTest extends TestCase
 
         self::assertSame(
             [
-                'Foo\\SlashedA'                      => 'test://BackslashLineEndingString.php',
-                'Foo\\SlashedB'                      => 'test://BackslashLineEndingString.php',
-                'Smarty_Internal_Compile_Block'      => 'test://InvalidUnicode.php',
+                'Foo\\SlashedA' => 'test://BackslashLineEndingString.php',
+                'Foo\\SlashedB' => 'test://BackslashLineEndingString.php',
+                'Smarty_Internal_Compile_Block' => 'test://InvalidUnicode.php',
                 'Smarty_Internal_Compile_Blockclose' => 'test://InvalidUnicode.php',
             ],
             ClassMapGenerator::createMap($arrayOfSplFileInfoStreamPaths)
@@ -305,7 +311,7 @@ class ClassMapGeneratorTest extends TestCase
             "
         );
 
-        foreach (array('test', 'fixture', 'example') as $keyword) {
+        foreach (['test', 'fixture', 'example'] as $keyword) {
             if (!is_dir($tempDir . '/ambiguous/' . $keyword)) {
                 mkdir($tempDir . '/ambiguous/' . $keyword, 0777, true);
             }
@@ -349,7 +355,7 @@ class ClassMapGeneratorTest extends TestCase
 
     public function testCreateMapDoesNotHitRegexBacktraceLimit(): void
     {
-        $expected = array(
+        $expected = [
             'Foo\\StripNoise' => realpath(__DIR__) . '/Fixtures/pcrebacktracelimit/StripNoise.php',
             'Foo\\VeryLongHeredoc' => realpath(__DIR__) . '/Fixtures/pcrebacktracelimit/VeryLongHeredoc.php',
             'Foo\\ClassAfterLongHereDoc' => realpath(__DIR__) . '/Fixtures/pcrebacktracelimit/VeryLongHeredoc.php',
@@ -357,7 +363,7 @@ class ClassMapGeneratorTest extends TestCase
             'Foo\\VeryLongPHP73Nowdoc' => realpath(__DIR__) . '/Fixtures/pcrebacktracelimit/VeryLongPHP73Nowdoc.php',
             'Foo\\ClassAfterLongNowDoc' => realpath(__DIR__) . '/Fixtures/pcrebacktracelimit/VeryLongPHP73Nowdoc.php',
             'Foo\\VeryLongNowdoc' => realpath(__DIR__) . '/Fixtures/pcrebacktracelimit/VeryLongNowdoc.php',
-        );
+        ];
 
         ini_set('pcre.backtrack_limit', '30000');
         $result = ClassMapGenerator::createMap(__DIR__ . '/Fixtures/pcrebacktracelimit');
@@ -410,10 +416,10 @@ class ClassMapGeneratorTest extends TestCase
 
     public function testCreateMapWithDirectoryExcluded(): void
     {
-        $expected = array(
+        $expected = [
             'PrefixCollision_A_B_Bar' => realpath(__DIR__) . '/Fixtures/beta/PrefixCollision/A/B/Bar.php',
             'PrefixCollision_A_B_Foo' => realpath(__DIR__) . '/Fixtures/beta/PrefixCollision/A/B/Foo.php',
-        );
+        ];
 
         $this->generator->scanPaths(realpath(__DIR__) . '/Fixtures/beta', null, 'classmap', null, ['NamespaceCollision']);
         $result = $this->generator->getClassMap();
@@ -423,8 +429,6 @@ class ClassMapGeneratorTest extends TestCase
     /**
      * @param array<string, string> $expected
      * @param array<class-string, string> $actual
-     * @param string $message
-     * @return  void
      */
     protected static function assertEqualsNormalized(array $expected, array $actual, string $message = ''): void
     {

@@ -120,7 +120,7 @@ class PhpFileCleaner
                 if ($this->maxMatches === 1 && isset(self::$typeConfig[$char])) {
                     $type = self::$typeConfig[$char];
                     if (
-                        \substr($this->contents, $this->index, $type['length']) === $type['name']
+                        substr($this->contents, $this->index, $type['length']) === $type['name']
                         && Preg::isMatch($type['pattern'], $this->contents, $match, 0, $this->index - 1)
                     ) {
                         return $clean . $match[0];
@@ -130,7 +130,7 @@ class PhpFileCleaner
                 $this->index += 1;
                 $skip = strcspn($this->contents, self::$rejectChars, $this->index);
                 if ($skip > 0) {
-                    $clean .= $char . \substr($this->contents, $this->index, $skip);
+                    $clean .= $char . substr($this->contents, $this->index, $skip);
                     $this->index += $skip;
                 } else {
                     $clean .= $char;
@@ -212,7 +212,7 @@ class PhpFileCleaner
                     continue 2;
                 case $firstDelimiterChar:
                     if (
-                        \substr($this->contents, $this->index, $delimiterLength) === $delimiter
+                        substr($this->contents, $this->index, $delimiterLength) === $delimiter
                         && $this->match($delimiterPattern)
                     ) {
                         $this->index += $delimiterLength;
