@@ -155,8 +155,14 @@ class PhpFileCleaner
 
     private function skipString(string $delimiter): void
     {
+        $rejectChars = '\\' . $delimiter;
         $this->index += 1;
         while ($this->index < $this->len) {
+            $this->index += strcspn($this->contents, $rejectChars, $this->index);
+            if ($this->index >= $this->len) {
+                break;
+            }
+
             if ($this->contents[$this->index] === '\\' && ($this->peek('\\') || $this->peek($delimiter))) {
                 $this->index += 2;
                 continue;
@@ -175,7 +181,9 @@ class PhpFileCleaner
     {
         $this->index += 2;
         while ($this->index < $this->len) {
-            if ($this->contents[$this->index] === '*' && $this->peek('/')) {
+            $this->index += strcspn($this->contents, '*', $this->index);
+
+            if ($this->peek('/')) {
                 $this->index += 2;
                 break;
             }
@@ -186,13 +194,7 @@ class PhpFileCleaner
 
     private function skipToNewline(): void
     {
-        while ($this->index < $this->len) {
-            if ($this->contents[$this->index] === "\r" || $this->contents[$this->index] === "\n") {
-                return;
-            }
-
-            $this->index += 1;
-        }
+        $this->index += strcspn($this->contents, "\r\n", $this->index);
     }
 
     private function skipHeredoc(string $delimiter): void
@@ -222,16 +224,10 @@ class PhpFileCleaner
             }
 
             // skip the rest of the line
-            while ($this->index < $this->len) {
-                $this->skipToNewline();
+            $this->skipToNewline();
 
-                // skip newlines
-                while ($this->index < $this->len && ($this->contents[$this->index] === "\r" || $this->contents[$this->index] === "\n")) {
-                    $this->index += 1;
-                }
-
-                break;
-            }
+            // skip newlines
+            $this->index += strspn($this->contents, "\r\n", $this->index);
         }
     }
 
