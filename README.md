@@ -25,7 +25,8 @@ Basic usage
 -----------
 
 If all you want is to scan a directory and extract a classmap with all
-classes/interfaces/traits/enums mapped to their paths, you can simply use:
+classes/interfaces/traits/enums (and named `extension` declarations from the
+proposed Extension Methods RFC) mapped to their paths, you can simply use:
 
 
 ```php

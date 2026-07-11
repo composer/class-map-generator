@@ -59,7 +59,7 @@ class PhpFileParser
         }
 
         // return early if there is no chance of matching anything in this file
-        Preg::matchAllStrictGroups('{\b(?:class|interface|trait'.$extraTypes.')\s}i', $contents, $matches);
+        Preg::matchAllStrictGroups('{\b(?:class|interface|trait|extension'.$extraTypes.')\s}i', $contents, $matches);
         if ([] === $matches[0]) {
             return [];
         }
@@ -71,6 +71,7 @@ class PhpFileParser
         Preg::matchAll('{
             (?:
                  \b(?<![\\\\$:>])(?P<type>class|interface|trait'.$extraTypes.') \s++ (?P<name>[a-zA-Z_\x7f-\xff:][a-zA-Z0-9_\x7f-\xff:\-]*+)
+               | \b(?<![\\\\$:>])(?P<ext>extension) \s++ (?P<extname>[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+) \s++ on \s++ \\\\?[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+(?:\s*+\\\\\s*+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+)*+ \s*+ \$[a-zA-Z_\x7f-\xff]
                | \b(?<![\\\\$:>])(?P<ns>namespace) (?P<nsname>\s++[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+(?:\s*+\\\\\s*+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+)*+)? \s*+ [\{;]
             )
         }ix', $contents, $matches);
@@ -81,6 +82,16 @@ class PhpFileParser
         for ($i = 0, $len = \count($matches['type']); $i < $len; ++$i) {
             if (isset($matches['ns'][$i]) && $matches['ns'][$i] !== '') {
                 $namespace = str_replace([' ', "\t", "\r", "\n"], '', (string) $matches['nsname'][$i]) . '\\';
+            } elseif (isset($matches['ext'][$i]) && $matches['ext'][$i] !== '') {
+                // named extension declarations (proposed "Extension Methods" RFC) declare the identifier
+                // before "on"; the target type after "on" and the receiver variable are not part of the name,
+                // and the anonymous form ("extension Target $var {") declares no autoloadable symbol at all
+                $name = $matches['extname'][$i];
+                \assert(\is_string($name));
+
+                /** @var class-string */
+                $className = ltrim($namespace . $name, '\\');
+                $classes[] = $className;
             } else {
                 $name = $matches['name'][$i];
                 \assert(\is_string($name));
@@ -131,7 +142,7 @@ class PhpFileParser
                 $extraTypesArray = ['enum'];
             }
 
-            PhpFileCleaner::setTypeConfig(array_merge(['class', 'interface', 'trait'], $extraTypesArray));
+            PhpFileCleaner::setTypeConfig(array_merge(['class', 'interface', 'trait', 'extension'], $extraTypesArray));
         }
 
         return $extraTypes;
