@@ -123,6 +123,7 @@ class ClassMapGeneratorTest extends TestCase
             'Acme\DomKit\DomTraversal' => __DIR__ . '/Fixtures/extensions/ExtensionNamespaced.php',
             'Acme\Scalars\StringHelpers' => __DIR__ . '/Fixtures/extensions/ExtensionScalarTargets.php',
             'Acme\Scalars\ArrayHelpers' => __DIR__ . '/Fixtures/extensions/ExtensionScalarTargets.php',
+            'Acme\Aliased\WidgetShortcuts' => __DIR__ . '/Fixtures/extensions/ExtensionAliasedTarget.php',
             'Acme\Multiline\WidgetHelpers' => __DIR__ . '/Fixtures/extensions/ExtensionMultiline.php',
             'Acme\Multiline\CaseInsensitive' => __DIR__ . '/Fixtures/extensions/ExtensionMultiline.php',
             'Acme\Tricky\extension' => __DIR__ . '/Fixtures/extensions/ExtensionFalsePositives.php',

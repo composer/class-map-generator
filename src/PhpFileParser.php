@@ -21,6 +21,20 @@ use Composer\Pcre\Preg;
 class PhpFileParser
 {
     /**
+     * Regex fragment matching a named extension declaration (proposed "Extension Methods" RFC)
+     *
+     * Captures the declared name (extname) and the raw target token after "on" (exttarget). The
+     * target is captured exactly as written in the source — possibly a relative name or an alias
+     * from a "use" import, unresolved — in anticipation of the target-hint optimization described
+     * in the RFC's Future Scope. It is not used yet and is not part of the class map output.
+     *
+     * Must remain embeddable in a case-insensitive, whitespace-extended ("ix") pattern.
+     *
+     * @internal
+     */
+    public const EXTENSION_REGEX = '\b(?<![\\\\$:>])(?P<ext>extension) \s++ (?P<extname>[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+) \s++ on \s++ (?P<exttarget>\\\\?[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+(?:\s*+\\\\\s*+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+)*+) \s*+ \$[a-zA-Z_\x7f-\xff]';
+
+    /**
      * Extract the classes in the given file
      *
      * @param  string            $path The file to check
@@ -71,7 +85,7 @@ class PhpFileParser
         Preg::matchAll('{
             (?:
                  \b(?<![\\\\$:>])(?P<type>class|interface|trait'.$extraTypes.') \s++ (?P<name>[a-zA-Z_\x7f-\xff:][a-zA-Z0-9_\x7f-\xff:\-]*+)
-               | \b(?<![\\\\$:>])(?P<ext>extension) \s++ (?P<extname>[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+) \s++ on \s++ \\\\?[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+(?:\s*+\\\\\s*+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+)*+ \s*+ \$[a-zA-Z_\x7f-\xff]
+               | '.self::EXTENSION_REGEX.'
                | \b(?<![\\\\$:>])(?P<ns>namespace) (?P<nsname>\s++[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+(?:\s*+\\\\\s*+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+)*+)? \s*+ [\{;]
             )
         }ix', $contents, $matches);
