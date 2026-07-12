@@ -117,6 +117,20 @@ class ClassMapGeneratorTest extends TestCase
             'Dummy\Test\AnonClassHolder' => __DIR__ . '/Fixtures/php7.0/anonclass.php',
         ]];
 
+        // proposed "Extension Methods" RFC, recognized on any PHP version as parsing is purely text-based
+        $data[] = [__DIR__ . '/Fixtures/extensions', [
+            'DomTraversal' => __DIR__ . '/Fixtures/extensions/ExtensionGlobal.php',
+            'Acme\DomKit\DomTraversal' => __DIR__ . '/Fixtures/extensions/ExtensionNamespaced.php',
+            'Acme\Scalars\StringHelpers' => __DIR__ . '/Fixtures/extensions/ExtensionScalarTargets.php',
+            'Acme\Scalars\ArrayHelpers' => __DIR__ . '/Fixtures/extensions/ExtensionScalarTargets.php',
+            'Acme\Aliased\WidgetShortcuts' => __DIR__ . '/Fixtures/extensions/ExtensionAliasedTarget.php',
+            'Acme\Multiline\WidgetHelpers' => __DIR__ . '/Fixtures/extensions/ExtensionMultiline.php',
+            'Acme\Multiline\CaseInsensitive' => __DIR__ . '/Fixtures/extensions/ExtensionMultiline.php',
+            'Acme\Tricky\extension' => __DIR__ . '/Fixtures/extensions/ExtensionFalsePositives.php',
+            'Acme\Mixed\Formatter' => __DIR__ . '/Fixtures/extensions/ExtensionWithClass.php',
+            'Acme\Mixed\FormatterHelpers' => __DIR__ . '/Fixtures/extensions/ExtensionWithClass.php',
+        ]];
+
         if (PHP_VERSION_ID >= 80100) {
             $data[] = [__DIR__ . '/Fixtures/php8.1', [
                 'RolesBasicEnum' => __DIR__ . '/Fixtures/php8.1/enum_basic.php',
@@ -412,6 +426,45 @@ class ClassMapGeneratorTest extends TestCase
         self::assertCount(1, $rawViolations[$classWithNameSpaceOutsideConfiguredScopeFilepath]);
         self::assertSame('Class UnexpectedNamespace\ClassWithNameSpaceOutsideConfiguredScope located in ./tests/Fixtures/psrViolations/ClassWithNameSpaceOutsideConfiguredScope.php does not comply with psr-4 autoloading standard (rule: ExpectedNamespace\ => ./tests/Fixtures/psrViolations). Skipping.', $rawViolations[$classWithNameSpaceOutsideConfiguredScopeFilepath][0]['warning']);
         self::assertSame('UnexpectedNamespace\ClassWithNameSpaceOutsideConfiguredScope', $rawViolations[$classWithNameSpaceOutsideConfiguredScopeFilepath][0]['className']);
+    }
+
+    public function testExtensionDeclarationsFollowPsr4Rules(): void
+    {
+        $this->generator->scanPaths(__DIR__ . '/Fixtures/psr4Extensions', null, 'psr-4', 'ExpectedNamespace\\');
+        $classMap = $this->generator->getClassMap();
+
+        // a named extension declaration matching the file path is accepted as the file's expected symbol
+        self::assertArrayHasKey('ExpectedNamespace\\DomTraversal', $classMap->getMap());
+
+        self::assertSame(
+            [
+                'Class ExpectedNamespace\SomeOtherName located in ./tests/Fixtures/psr4Extensions/ExtensionWithIncorrectName.php does not comply with psr-4 autoloading standard (rule: ExpectedNamespace\ => ./tests/Fixtures/psr4Extensions). Skipping.',
+            ],
+            $classMap->getPsrViolations()
+        );
+    }
+
+    /**
+     * Extension names live in the same name=>file map as class-like symbols, so
+     * duplicates produce the usual ambiguous class warnings
+     */
+    public function testExtensionNamesShareNamespaceWithClasses(): void
+    {
+        $tempDir = self::getUniqueTmpDirectory();
+        mkdir($tempDir.'/other');
+
+        file_put_contents($tempDir . '/A.php', "<?php\nclass A {}");
+        file_put_contents($tempDir . '/other/A.php', "<?php\nextension A on \\ArrayObject \$a {}");
+
+        $this->generator->scanPaths($tempDir);
+        $classMap = $this->generator->getClassMap();
+
+        self::assertCount(1, $classMap->getAmbiguousClasses());
+        self::assertArrayHasKey('A', $classMap->getAmbiguousClasses());
+        self::assertCount(1, $classMap->getAmbiguousClasses()['A']);
+
+        $fs = new Filesystem();
+        $fs->remove($tempDir);
     }
 
     public function testCreateMapWithDirectoryExcluded(): void
