@@ -106,6 +106,54 @@ class ClassMap implements \Countable
     }
 
     /**
+     * A list of lists of ambiguous namespaces
+     *
+     * This occurs when the same namespace can be found in several folders
+     *
+     * As namespaces are case-insensitive but file systems can be case folding,
+     * Namespaces that work on a case-sensitive filesystem might not work on a case insensitive one.
+     * For example: a namespace Foo/Bar and Foo/bar can co-exist according to PSR4 (namespaces should be case-insensitive)
+     * but will break on filesystems that perform case folding. Both namespaces now co-exist in one folder,
+     * and one of the namespaces will not have the same casing as the folder name
+     *
+     * @return list<non-empty-list<string>>
+     */
+    public function getAmbiguousNamespaces(): array
+    {
+        $visitedNamespaces = $ambiguousNamespaces = [];
+        foreach (array_keys($this->map) as $symbol) {
+            $parts = explode('\\', $symbol);
+            array_pop($parts);
+
+            $currentPath = '';
+            foreach ($parts as $namespace) {
+                $currentPath .= ($currentPath !== '' ? '\\' : '') . $namespace;
+                $lowerPath = strtolower($currentPath);
+                if (!isset($visitedNamespaces[$lowerPath])) {
+                    $visitedNamespaces[$lowerPath] = $currentPath;
+                    continue;
+                }
+
+                if ($visitedNamespaces[$lowerPath] === $currentPath) {
+                    continue;
+                }
+
+                if (!isset($ambiguousNamespaces[$lowerPath])) {
+                    $ambiguousNamespaces[$lowerPath][] = $visitedNamespaces[$lowerPath];
+                }
+
+                if (in_array($currentPath, $ambiguousNamespaces[$lowerPath], true)) {
+                    continue;
+                }
+
+                $ambiguousNamespaces[$lowerPath][] = $currentPath;
+            }
+        }
+
+        return array_values($ambiguousNamespaces);
+    }
+
+    /**
      * Sorts the class map alphabetically by class names
      */
     public function sort(): void
