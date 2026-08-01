@@ -106,51 +106,93 @@ class ClassMap implements \Countable
     }
 
     /**
-     * A list of lists of ambiguous namespaces
+     * A list of sets of paths which are identical except for their casing
      *
-     * This occurs when the same namespace can be found in several folders
+     * Case-insensitive filesystems (Windows, macOS) fold each such set into a single file or
+     * directory, so a project which autoloads correctly on a case-sensitive filesystem can behave
+     * differently there. This typically happens when a folder is renamed to a different casing:
+     * on a case-sensitive checkout src/Foo and src/foo then co-exist, while elsewhere they merge
+     * and the classes below them no longer match the casing of the folder they end up in.
      *
-     * As namespaces are case-insensitive but file systems can be case folding,
-     * Namespaces that work on a case-sensitive filesystem might not work on a case insensitive one.
-     * For example: a namespace Foo/Bar and Foo/bar can co-exist according to PSR4 (namespaces should be case-insensitive)
-     * but will break on filesystems that perform case folding. Both namespaces now co-exist in one folder,
-     * and one of the namespaces will not have the same casing as the folder name
+     * Only the topmost difference is reported for any given file, as renaming that folder also
+     * resolves every path below it.
      *
-     * @return list<non-empty-list<string>>
+     * By default, paths that contain test(s), fixture(s), example(s) or stub(s) are ignored
+     * as those are typically not problematic when they're dummy classes in the tests folder.
+     * If you want to get these back as well you can pass false to $duplicatesFilter. Or
+     * you can pass your own pattern to exclude if you need to change the default.
+     *
+     * @param non-empty-string|false $duplicatesFilter
+     *
+     * @return list<non-empty-list<non-empty-string>>
      */
-    public function getAmbiguousNamespaces(): array
+    public function getAmbiguousFolders($duplicatesFilter = '{/(test|fixture|example|stub)s?/}i'): array
     {
-        $visitedNamespaces = $ambiguousNamespaces = [];
-        foreach (array_keys($this->map) as $symbol) {
-            $parts = explode('\\', $symbol);
-            array_pop($parts);
+        if (true === $duplicatesFilter) {
+            throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
+        }
 
-            $currentPath = '';
-            foreach ($parts as $namespace) {
-                $currentPath .= ($currentPath !== '' ? '\\' : '') . $namespace;
-                $lowerPath = strtolower($currentPath);
-                if (!isset($visitedNamespaces[$lowerPath])) {
-                    $visitedNamespaces[$lowerPath] = $currentPath;
-                    continue;
+        /** @var array<string, non-empty-string> $visitedPaths */
+        $visitedPaths = [];
+        /** @var array<string, non-empty-list<non-empty-string>> $ambiguousPaths */
+        $ambiguousPaths = [];
+        foreach ($this->map as $path) {
+            $path = strtr($path, '\\', '/');
+            if (false !== $duplicatesFilter && Preg::isMatch($duplicatesFilter, $path)) {
+                continue;
+            }
+
+            // walk every prefix of the path, the full path included so that files which only
+            // differ in casing are caught as well as the folders above them
+            $offset = 0;
+            while (true) {
+                $separator = strpos($path, '/', $offset);
+                if (false === $separator) {
+                    $prefix = $path;
+                } else {
+                    $prefix = substr($path, 0, $separator);
+                    $offset = $separator + 1;
                 }
 
-                if ($visitedNamespaces[$lowerPath] === $currentPath) {
-                    continue;
+                if ('' !== $prefix) {
+                    $foldedPrefix = self::foldCase($prefix);
+                    if (!isset($visitedPaths[$foldedPrefix])) {
+                        $visitedPaths[$foldedPrefix] = $prefix;
+                    } elseif ($visitedPaths[$foldedPrefix] !== $prefix) {
+                        if (!isset($ambiguousPaths[$foldedPrefix])) {
+                            $ambiguousPaths[$foldedPrefix] = [$visitedPaths[$foldedPrefix]];
+                        }
+                        if (!\in_array($prefix, $ambiguousPaths[$foldedPrefix], true)) {
+                            $ambiguousPaths[$foldedPrefix][] = $prefix;
+                        }
+
+                        // renaming this folder also resolves everything below it, so stop here
+                        break;
+                    }
                 }
 
-                if (!isset($ambiguousNamespaces[$lowerPath])) {
-                    $ambiguousNamespaces[$lowerPath][] = $visitedNamespaces[$lowerPath];
+                if (false === $separator) {
+                    break;
                 }
-
-                if (in_array($currentPath, $ambiguousNamespaces[$lowerPath], true)) {
-                    continue;
-                }
-
-                $ambiguousNamespaces[$lowerPath][] = $currentPath;
             }
         }
 
-        return array_values($ambiguousNamespaces);
+        // sort to keep the output stable, as $this->map follows filesystem traversal order
+        ksort($ambiguousPaths, SORT_STRING);
+        foreach ($ambiguousPaths as $foldedPrefix => $paths) {
+            sort($paths, SORT_STRING);
+            $ambiguousPaths[$foldedPrefix] = $paths;
+        }
+
+        return array_values($ambiguousPaths);
+    }
+
+    /**
+     * Lowercases ASCII characters only, as strtolower is locale dependent before PHP 8.2
+     */
+    private static function foldCase(string $str): string
+    {
+        return strtr($str, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz');
     }
 
     /**
