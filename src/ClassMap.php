@@ -156,7 +156,9 @@ class ClassMap implements \Countable
         $variants = [];
         $previous = '';
         foreach ($paths as $path) {
+            // length of the common prefix with the previous path, as XOR turns equal bytes into \0
             $common = strspn($path ^ $previous, "\0");
+            // cut back to the last / within it, as only whole folders were registered already
             $skipUntil = $common > 0 ? (int) strrpos($path, '/', $common - \strlen($path) - 1) : 0;
             $previous = $path;
 
