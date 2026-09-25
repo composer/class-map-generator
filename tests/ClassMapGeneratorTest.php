@@ -261,6 +261,27 @@ class ClassMapGeneratorTest extends TestCase
         );
     }
 
+    public function testStreamWrapperWithAbsolutePath(): void
+    {
+        if ('\\' === \DIRECTORY_SEPARATOR) {
+            self::markTestSkipped('Absolute paths start with a drive letter on Windows');
+        }
+
+        $archive = realpath(sys_get_temp_dir()).'/class-map-generator-'.bin2hex(random_bytes(4)).'.tar';
+        $phar = new \PharData($archive);
+        $phar->addFromString('src/Foo.php', '<?php namespace Acme; class Foo {}');
+        unset($phar);
+
+        try {
+            self::assertSame(
+                ['Acme\\Foo' => 'phar://'.$archive.'/src/Foo.php'],
+                ClassMapGenerator::createMap('phar://'.$archive.'/src')
+            );
+        } finally {
+            unlink($archive);
+        }
+    }
+
     public function testAmbiguousReference(): void
     {
         $tempDir = self::getUniqueTmpDirectory();
