@@ -19,6 +19,8 @@ use Composer\Pcre\Preg;
  */
 class ClassMap implements \Countable
 {
+    private const DEFAULT_DUPLICATES_FILTER = '{(?:^|/)(test|fixture|example|stub)s?/}i';
+
     /**
      * @var array<class-string, non-empty-string>
      */
@@ -82,7 +84,7 @@ class ClassMap implements \Countable
      *
      * @return array<class-string, array<non-empty-string>>
      */
-    public function getAmbiguousClasses($duplicatesFilter = '{/(test|fixture|example|stub)s?/}i'): array
+    public function getAmbiguousClasses($duplicatesFilter = self::DEFAULT_DUPLICATES_FILTER): array
     {
         if (false === $duplicatesFilter) {
             return $this->ambiguousClasses;
@@ -126,7 +128,7 @@ class ClassMap implements \Countable
      *
      * @return list<non-empty-list<non-empty-string>>
      */
-    public function getAmbiguousFolders($duplicatesFilter = '{/(test|fixture|example|stub)s?/}i'): array
+    public function getAmbiguousFolders($duplicatesFilter = self::DEFAULT_DUPLICATES_FILTER): array
     {
         if (true === $duplicatesFilter) {
             throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
