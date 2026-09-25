@@ -116,8 +116,8 @@ class ClassMap implements \Countable
      * on a case-sensitive checkout src/Foo and src/foo then co-exist, while elsewhere they merge
      * and the classes below them no longer match the casing of the folder they end up in.
      *
-     * Only the topmost difference is reported for any given file, as renaming that folder also
-     * resolves every path below it.
+     * Every folder or file whose own name differs in casing is reported, while differences it
+     * only inherits from a parent folder are reported once at that parent's level.
      *
      * By default, paths that contain test(s), fixture(s), example(s) or stub(s) are ignored
      * as those are typically not problematic when they're dummy classes in the tests folder.
@@ -134,10 +134,6 @@ class ClassMap implements \Countable
             throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
         }
 
-        /** @var array<string, non-empty-string> $visitedPaths */
-        $visitedPaths = [];
-        /** @var array<string, non-empty-list<non-empty-string>> $ambiguousPaths */
-        $ambiguousPaths = [];
         $paths = [];
         foreach ($this->map as $path) {
             $paths[] = strtr($path, '\\', '/');
@@ -152,6 +148,9 @@ class ClassMap implements \Countable
         // sort so that the result does not depend on the order in which files were scanned
         sort($paths, SORT_STRING);
 
+        // folded prefix => name of its last segment as written => first path seen with that name
+        /** @var array<string, array<string, non-empty-string>> $seen */
+        $seen = [];
         foreach ($paths as $path) {
             if (false !== $duplicatesFilter && Preg::isMatch($duplicatesFilter, $path)) {
                 continue;
@@ -163,43 +162,33 @@ class ClassMap implements \Countable
             $offset = 0;
             while (true) {
                 $separator = strpos($path, '/', $offset);
-                if (false === $separator) {
-                    $prefix = $path;
-                    $foldedPrefix = $foldedPath;
-                } else {
-                    $prefix = substr($path, 0, $separator);
-                    $foldedPrefix = substr($foldedPath, 0, $separator);
-                    $offset = $separator + 1;
-                }
-
-                if ('' !== $prefix) {
-                    if (!isset($visitedPaths[$foldedPrefix])) {
-                        $visitedPaths[$foldedPrefix] = $prefix;
-                    } elseif ($visitedPaths[$foldedPrefix] !== $prefix) {
-                        if (!isset($ambiguousPaths[$foldedPrefix])) {
-                            $ambiguousPaths[$foldedPrefix] = [$visitedPaths[$foldedPrefix]];
-                        }
-                        if (!\in_array($prefix, $ambiguousPaths[$foldedPrefix], true)) {
-                            $ambiguousPaths[$foldedPrefix][] = $prefix;
-                        }
-
-                        // renaming this folder also resolves everything below it, so stop here
-                        break;
+                $end = false === $separator ? \strlen($path) : $separator;
+                $name = substr($path, $offset, $end - $offset);
+                // a name written the same way as one already seen only differs by its parents,
+                // which get reported at their own level
+                if ('' !== $name) {
+                    $foldedPrefix = substr($foldedPath, 0, $end);
+                    if (!isset($seen[$foldedPrefix][$name])) {
+                        $seen[$foldedPrefix][$name] = substr($path, 0, $offset).$name;
                     }
                 }
 
                 if (false === $separator) {
                     break;
                 }
+                $offset = $separator + 1;
             }
         }
 
-        // sort the groups by folded path, as they are created whenever a second variant is seen
-        ksort($ambiguousPaths, SORT_STRING);
-        foreach ($ambiguousPaths as $foldedPrefix => $group) {
-            sort($group, SORT_STRING);
-            $ambiguousPaths[$foldedPrefix] = $group;
+        $ambiguousPaths = [];
+        foreach ($seen as $foldedPrefix => $variants) {
+            if (\count($variants) > 1) {
+                // already sorted as the paths were walked in order
+                $ambiguousPaths[$foldedPrefix] = array_values($variants);
+            }
         }
+        // sort the groups by folded path, as they got created whenever a second variant was seen
+        ksort($ambiguousPaths, SORT_STRING);
 
         return array_values($ambiguousPaths);
     }
