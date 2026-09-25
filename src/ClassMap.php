@@ -37,6 +37,13 @@ class ClassMap implements \Countable
     private $psrViolations = [];
 
     /**
+     * Results of getAmbiguousFolders by filter, '' being used for false
+     *
+     * @var array<string, list<non-empty-list<non-empty-string>>>
+     */
+    private $ambiguousFoldersCache = [];
+
+    /**
      * Returns the class map, which is a list of paths indexed by class name
      *
      * @return array<class-string, non-empty-string>
@@ -125,6 +132,8 @@ class ClassMap implements \Countable
      * A set of paths is only left out when every path below it is ignored though, as a test
      * folder merging with a production folder is still a problem for the latter.
      *
+     * The result is cached until a class is added.
+     *
      * @param non-empty-string|false $duplicatesFilter
      *
      * @return list<non-empty-list<non-empty-string>>
@@ -133,6 +142,21 @@ class ClassMap implements \Countable
     {
         self::assertValidDuplicatesFilter($duplicatesFilter);
 
+        $cacheKey = false === $duplicatesFilter ? '' : $duplicatesFilter;
+        if (!isset($this->ambiguousFoldersCache[$cacheKey])) {
+            $this->ambiguousFoldersCache[$cacheKey] = $this->findAmbiguousFolders($duplicatesFilter);
+        }
+
+        return $this->ambiguousFoldersCache[$cacheKey];
+    }
+
+    /**
+     * @param non-empty-string|false $duplicatesFilter
+     *
+     * @return list<non-empty-list<non-empty-string>>
+     */
+    private function findAmbiguousFolders($duplicatesFilter): array
+    {
         $paths = [];
         foreach ($this->map as $path) {
             $paths[] = strtr($path, '\\', '/');
@@ -255,6 +279,7 @@ class ClassMap implements \Countable
         unset($this->psrViolations[strtr($path, '\\', '/')]);
 
         $this->map[$className] = $path;
+        $this->ambiguousFoldersCache = [];
     }
 
     /**
@@ -303,6 +328,7 @@ class ClassMap implements \Countable
     public function addAmbiguousClass(string $className, string $path): void
     {
         $this->ambiguousClasses[$className][] = $path;
+        $this->ambiguousFoldersCache = [];
     }
 
     public function count(): int
