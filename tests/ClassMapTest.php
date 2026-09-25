@@ -65,14 +65,57 @@ class ClassMapTest extends TestCase
                     ['/proj/src/CaseFolding', '/proj/src/Casefolding', '/proj/src/casefolding'],
                 ],
             ],
-            // only the topmost difference is reported, renaming it resolves the ones below it
-            'nested differences are reported once' => [
+            // every level whose own name differs in casing is reported, as renaming the parent
+            // does not make the children match each other
+            'nested differences are all reported' => [
                 [
                     'A\B' => '/proj/src/Foo/Bar/A.php',
                     'A\C' => '/proj/src/foo/bar/C.php',
                 ],
                 [
                     ['/proj/src/Foo', '/proj/src/foo'],
+                    ['/proj/src/Foo/Bar', '/proj/src/foo/bar'],
+                ],
+            ],
+            // a difference inherited from the parent is not repeated for children matching each other
+            'ancestor difference is not repeated for identical children' => [
+                [
+                    'A\B' => '/proj/src/Foo/Bar/A.php',
+                    'A\C' => '/proj/src/foo/Bar/B.php',
+                ],
+                [
+                    ['/proj/src/Foo', '/proj/src/foo'],
+                ],
+            ],
+            'ancestor difference is not repeated for identical files' => [
+                [
+                    'A\A' => '/proj/src/Foo/A.php',
+                    'B\A' => '/proj/src/foo/A.php',
+                ],
+                [
+                    ['/proj/src/Foo', '/proj/src/foo'],
+                ],
+            ],
+            'files differing in casing under folders differing in casing' => [
+                [
+                    'A\A' => '/proj/src/Foo/A.php',
+                    'B\B' => '/proj/src/foo/a.php',
+                ],
+                [
+                    ['/proj/src/Foo', '/proj/src/foo'],
+                    ['/proj/src/Foo/A.php', '/proj/src/foo/a.php'],
+                ],
+            ],
+            'three variants under differently cased parents' => [
+                [
+                    'A\A' => '/proj/src/Foo/Bar/A.php',
+                    'B\B' => '/proj/src/foo/bar/B.php',
+                    'C\C' => '/proj/src/FOO/BAR/C.php',
+                    'D\D' => '/proj/src/Foo/bar/D.php',
+                ],
+                [
+                    ['/proj/src/FOO', '/proj/src/Foo', '/proj/src/foo'],
+                    ['/proj/src/FOO/BAR', '/proj/src/Foo/Bar', '/proj/src/Foo/bar'],
                 ],
             ],
             // Foo\Bar and Foo\bar are the same class as far as PHP is concerned, and the two files
@@ -85,6 +128,13 @@ class ClassMapTest extends TestCase
                 [
                     ['/proj/src/Bar.php', '/proj/src/bar.php'],
                 ],
+            ],
+            'folder and file with the same name' => [
+                [
+                    'A\A' => '/proj/src/Foo/A.php',
+                    'B\B' => '/proj/src/foo.php',
+                ],
+                [],
             ],
             'unrelated folders in separate trees' => [
                 [
@@ -119,6 +169,46 @@ class ClassMapTest extends TestCase
                     ['C:/proj/src/Foo', 'C:/proj/src/foo'],
                 ],
             ],
+            'mixed directory separators' => [
+                [
+                    'A\A' => 'C:\\proj\\src\\Foo\\A.php',
+                    'B\B' => 'C:/proj/src/foo/B.php',
+                ],
+                [
+                    ['C:/proj/src/Foo', 'C:/proj/src/foo'],
+                ],
+            ],
+            // drive letters and stream wrapper schemes are never case sensitive
+            'drive letter casing is ignored' => [
+                [
+                    'A\A' => 'C:\\proj\\src\\A.php',
+                    'B\B' => 'c:\\proj\\src\\B.php',
+                ],
+                [],
+            ],
+            'drive letter casing is kept in reported paths' => [
+                [
+                    'A\A' => 'C:\\proj\\src\\Foo\\A.php',
+                    'B\B' => 'c:\\proj\\src\\foo\\B.php',
+                ],
+                [
+                    ['C:/proj/src/Foo', 'c:/proj/src/foo'],
+                ],
+            ],
+            'stream wrapper scheme casing is ignored' => [
+                [
+                    'A\A' => 'phar:///proj/lib.phar/src/A.php',
+                    'B\B' => 'PHAR:///proj/lib.phar/src/B.php',
+                ],
+                [],
+            ],
+            'drive letter under a stream wrapper' => [
+                [
+                    'A\A' => 'phar://C:/proj/lib.phar/src/A.php',
+                    'B\B' => 'phar://c:/proj/lib.phar/src/B.php',
+                ],
+                [],
+            ],
             'relative paths' => [
                 [
                     'A\A' => 'src/Foo/A.php',
@@ -146,14 +236,45 @@ class ClassMapTest extends TestCase
     public function testGetAmbiguousFoldersIsNotAffectedByInsertionOrder(): void
     {
         $classes = [
-            'A\A' => '/proj/src/Casefolding/A.php',
-            'B\B' => '/proj/src/casefolding/B.php',
+            'A\A' => '/proj/src/Foo/Bar/A.php',
+            'B\B' => '/proj/src/foo/B.php',
+            'C\C' => '/proj/src/Foo/bar/C.php',
+            'D\D' => '/proj/src/foo/Bar/D.php',
+        ];
+        // src/foo/Bar only differs from src/Foo/Bar by its parent so it is not listed
+        $expected = [
+            ['/proj/src/Foo', '/proj/src/foo'],
+            ['/proj/src/Foo/Bar', '/proj/src/Foo/bar'],
         ];
 
-        self::assertSame(
-            self::classMapOf($classes)->getAmbiguousFolders(false),
-            self::classMapOf(array_reverse($classes, true))->getAmbiguousFolders(false)
+        foreach (self::permutations(array_keys($classes)) as $order) {
+            $permutation = [];
+            foreach ($order as $class) {
+                $permutation[$class] = $classes[$class];
+            }
+
+            self::assertSame($expected, self::classMapOf($permutation)->getAmbiguousFolders(false), 'Insertion order: '.implode(', ', $order));
+        }
+    }
+
+    public function testGetAmbiguousFoldersIncludesPathsOfAmbiguousClasses(): void
+    {
+        // a folder renamed to a different casing with stale copies left behind: the same classes
+        // are found in both, so the second copy only ends up in the ambiguous classes
+        $classMap = self::classMapOf(
+            [
+                'Foo\A' => '/proj/src/Foo/A.php',
+                'Foo\B' => '/proj/src/Foo/B.php',
+            ],
+            [
+                'Foo\A' => ['/proj/src/foo/A.php'],
+                'Foo\B' => ['/proj/src/foo/B.php'],
+            ]
         );
+
+        $expected = [['/proj/src/Foo', '/proj/src/foo']];
+        self::assertSame($expected, $classMap->getAmbiguousFolders());
+        self::assertSame($expected, $classMap->getAmbiguousFolders(false));
     }
 
     public function testGetAmbiguousFoldersFiltersTestPathsByDefault(): void
@@ -165,6 +286,46 @@ class ClassMapTest extends TestCase
 
         self::assertSame([], $classMap->getAmbiguousFolders());
         self::assertSame([['/proj/tests/Foo', '/proj/tests/foo']], $classMap->getAmbiguousFolders(false));
+    }
+
+    public function testGetAmbiguousFoldersOnlyFiltersFoldersWithoutUnfilteredPaths(): void
+    {
+        // a test folder which merges with a production folder is still a problem for the latter
+        $classMap = self::classMapOf([
+            'A\A' => '/proj/src/Foo/A.php',
+            'B\B' => '/proj/src/foo/Tests/B.php',
+            'C\C' => '/proj/src/foo/tests/C.php',
+        ]);
+
+        self::assertSame([['/proj/src/Foo', '/proj/src/foo']], $classMap->getAmbiguousFolders());
+        self::assertSame([
+            ['/proj/src/Foo', '/proj/src/foo'],
+            ['/proj/src/foo/Tests', '/proj/src/foo/tests'],
+        ], $classMap->getAmbiguousFolders(false));
+
+        // while folders only containing filtered paths are ignored altogether
+        $classMap = self::classMapOf([
+            'A\A' => '/proj/tests/Foo/A.php',
+            'B\B' => '/proj/Tests/foo/B.php',
+        ]);
+
+        self::assertSame([], $classMap->getAmbiguousFolders());
+    }
+
+    public function testDefaultDuplicatesFilterAppliesToRelativePaths(): void
+    {
+        $classMap = self::classMapOf([
+            'A\A' => 'tests/Foo/A.php',
+            'B\B' => 'tests/foo/B.php',
+        ]);
+
+        self::assertSame([], $classMap->getAmbiguousFolders());
+        self::assertSame([['tests/Foo', 'tests/foo']], $classMap->getAmbiguousFolders(false));
+
+        $classMap = self::classMapOf(['A' => 'src/A.php'], ['A' => ['tests/A.php']]);
+
+        self::assertSame([], $classMap->getAmbiguousClasses());
+        self::assertSame(['A' => ['tests/A.php']], $classMap->getAmbiguousClasses(false));
     }
 
     public function testGetAmbiguousFoldersAcceptsACustomFilter(): void
@@ -188,15 +349,46 @@ class ClassMapTest extends TestCase
 
     /**
      * @param array<string, non-empty-string> $classes
+     * @param array<string, non-empty-list<non-empty-string>> $ambiguousClasses
      */
-    private static function classMapOf(array $classes): ClassMap
+    private static function classMapOf(array $classes, array $ambiguousClasses = []): ClassMap
     {
         $classMap = new ClassMap;
         foreach ($classes as $class => $path) {
             /** @phpstan-ignore argument.type */
             $classMap->addClass($class, $path);
         }
+        foreach ($ambiguousClasses as $class => $paths) {
+            foreach ($paths as $path) {
+                /** @phpstan-ignore argument.type */
+                $classMap->addAmbiguousClass($class, $path);
+            }
+        }
 
         return $classMap;
+    }
+
+    /**
+     * @template T
+     * @param list<T> $items
+     * @return list<list<T>>
+     */
+    private static function permutations(array $items): array
+    {
+        if (\count($items) <= 1) {
+            return [$items];
+        }
+
+        $permutations = [];
+        foreach ($items as $i => $item) {
+            $rest = $items;
+            unset($rest[$i]);
+            foreach (self::permutations(array_values($rest)) as $permutation) {
+                array_unshift($permutation, $item);
+                $permutations[] = $permutation;
+            }
+        }
+
+        return $permutations;
     }
 }
