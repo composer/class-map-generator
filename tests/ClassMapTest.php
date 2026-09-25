@@ -339,6 +339,22 @@ class ClassMapTest extends TestCase
         self::assertSame([['/proj/generated/Foo', '/proj/generated/foo']], $classMap->getAmbiguousFolders());
     }
 
+    public function testGetAmbiguousFoldersIsRecomputedWhenClassesAreAdded(): void
+    {
+        $classMap = self::classMapOf(['A\\A' => '/proj/src/Foo/A.php']);
+        self::assertSame([], $classMap->getAmbiguousFolders());
+
+        /** @phpstan-ignore argument.type */
+        $classMap->addClass('B\\B', '/proj/src/foo/B.php');
+        self::assertSame([['/proj/src/Foo', '/proj/src/foo']], $classMap->getAmbiguousFolders());
+
+        /** @phpstan-ignore argument.type */
+        $classMap->addAmbiguousClass('B\\B', '/proj/src/FOO/B.php');
+        self::assertSame([['/proj/src/FOO', '/proj/src/Foo', '/proj/src/foo']], $classMap->getAmbiguousFolders());
+        // the unfiltered result is cached separately
+        self::assertSame([['/proj/src/FOO', '/proj/src/Foo', '/proj/src/foo']], $classMap->getAmbiguousFolders(false));
+    }
+
     public function testGetAmbiguousFoldersRejectsTrueAsFilter(): void
     {
         self::expectException(\InvalidArgumentException::class);
