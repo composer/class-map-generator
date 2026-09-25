@@ -90,9 +90,7 @@ class ClassMap implements \Countable
             return $this->ambiguousClasses;
         }
 
-        if (true === $duplicatesFilter) {
-            throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
-        }
+        self::assertValidDuplicatesFilter($duplicatesFilter);
 
         $ambiguousClasses = [];
         foreach ($this->ambiguousClasses as $class => $paths) {
@@ -133,9 +131,7 @@ class ClassMap implements \Countable
      */
     public function getAmbiguousFolders($duplicatesFilter = self::DEFAULT_DUPLICATES_FILTER): array
     {
-        if (true === $duplicatesFilter) {
-            throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
-        }
+        self::assertValidDuplicatesFilter($duplicatesFilter);
 
         $paths = [];
         foreach ($this->map as $path) {
@@ -200,6 +196,16 @@ class ClassMap implements \Countable
         ksort($ambiguousPaths, SORT_STRING);
 
         return array_values($ambiguousPaths);
+    }
+
+    /**
+     * @param non-empty-string|bool $duplicatesFilter
+     */
+    private static function assertValidDuplicatesFilter($duplicatesFilter): void
+    {
+        if (true === $duplicatesFilter) {
+            throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
+        }
     }
 
     /**
