@@ -144,17 +144,21 @@ class ClassMap implements \Countable
                 $paths[] = strtr($path, '\\', '/');
             }
         }
-        // sort so that the result does not depend on the order in which files were scanned
+        // sorted so the result does not depend on scan order, and so that each path can skip
+        // the folders it shares with the previous one as those were already registered
         sort($paths, SORT_STRING);
 
+        // folded prefix => first path seen for it, which has the lowest casing as paths are sorted
+        /** @var array<string, non-empty-string> $first */
+        $first = [];
         // folded prefix => name of its last segment as written => first path seen with that name
-        /** @var array<string, array<string, non-empty-string>> $seen */
-        $seen = [];
-        // folded prefixes with at least one path below them which is not filtered out
-        /** @var array<string, true> $relevant */
-        $relevant = [];
+        /** @var array<string, array<string, non-empty-string>> $variants */
+        $variants = [];
+        $previous = '';
         foreach ($paths as $path) {
-            $filtered = false !== $duplicatesFilter && Preg::isMatch($duplicatesFilter, $path);
+            $common = strspn($path ^ $previous, "\0");
+            $skipUntil = $common > 0 ? (int) strrpos($path, '/', $common - \strlen($path) - 1) : 0;
+            $previous = $path;
 
             // walk every prefix of the path, the full path included so that files which only
             // differ in casing are caught as well as the folders above them
@@ -165,29 +169,50 @@ class ClassMap implements \Countable
             $offset = 0;
             foreach (explode('/', $path) as $name) {
                 $end = $offset + \strlen($name);
-                // a name written the same way as one already seen only differs by its parents,
-                // which get reported at their own level
-                if ('' !== $name && $end > $rootLength) {
+                if ('' !== $name && $end > $rootLength && $end > $skipUntil) {
                     $foldedPrefix = substr($foldedPath, 0, $end);
-                    if (!isset($seen[$foldedPrefix][$name])) {
-                        $seen[$foldedPrefix][$name] = substr($path, 0, $offset).$name;
-                    }
-                    if (!$filtered) {
-                        $relevant[$foldedPrefix] = true;
+                    if (!isset($first[$foldedPrefix])) {
+                        $first[$foldedPrefix] = substr($path, 0, $offset).$name;
+                    } elseif (0 !== substr_compare($first[$foldedPrefix], $name, $offset) && !isset($variants[$foldedPrefix][$name])) {
+                        // a name written the same way as the first one only differs by its
+                        // parents, which get reported at their own level
+                        $variants[$foldedPrefix][$name] = substr($path, 0, $offset).$name;
                     }
                 }
                 $offset = $end + 1;
             }
         }
 
-        $ambiguousPaths = [];
-        foreach ($seen as $foldedPrefix => $variants) {
-            if (\count($variants) > 1 && isset($relevant[$foldedPrefix])) {
-                // already sorted as the paths were walked in order
-                $ambiguousPaths[$foldedPrefix] = array_values($variants);
+        if (\count($variants) === 0) {
+            return [];
+        }
+
+        // only look for paths which are not filtered out once something was found
+        /** @var array<string, true>|null $relevant */
+        $relevant = null;
+        if (false !== $duplicatesFilter) {
+            $relevant = [];
+            foreach ($paths as $path) {
+                if (Preg::isMatch($duplicatesFilter, $path)) {
+                    continue;
+                }
+                $foldedPath = self::foldCase($path);
+                $offset = 0;
+                while (false !== ($separator = strpos($foldedPath, '/', $offset))) {
+                    $relevant[substr($foldedPath, 0, $separator)] = true;
+                    $offset = $separator + 1;
+                }
+                $relevant[$foldedPath] = true;
             }
         }
-        // sort the groups by folded path, as they got created whenever a second variant was seen
+
+        $ambiguousPaths = [];
+        foreach ($variants as $foldedPrefix => $names) {
+            if (null === $relevant || isset($relevant[$foldedPrefix])) {
+                // already sorted as the paths were walked in order
+                $ambiguousPaths[$foldedPrefix] = array_merge([$first[$foldedPrefix]], array_values($names));
+            }
+        }
         ksort($ambiguousPaths, SORT_STRING);
 
         return array_values($ambiguousPaths);
