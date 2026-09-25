@@ -124,6 +124,9 @@ class ClassMap implements \Countable
      * If you want to get these back as well you can pass false to $duplicatesFilter. Or
      * you can pass your own pattern to exclude if you need to change the default.
      *
+     * A set of paths is only left out when every path below it is ignored though, as a test
+     * folder merging with a production folder is still a problem for the latter.
+     *
      * @param non-empty-string|false $duplicatesFilter
      *
      * @return list<non-empty-list<non-empty-string>>
@@ -151,10 +154,11 @@ class ClassMap implements \Countable
         // folded prefix => name of its last segment as written => first path seen with that name
         /** @var array<string, array<string, non-empty-string>> $seen */
         $seen = [];
+        // folded prefixes with at least one path below them which is not filtered out
+        /** @var array<string, true> $relevant */
+        $relevant = [];
         foreach ($paths as $path) {
-            if (false !== $duplicatesFilter && Preg::isMatch($duplicatesFilter, $path)) {
-                continue;
-            }
+            $filtered = false !== $duplicatesFilter && Preg::isMatch($duplicatesFilter, $path);
 
             // walk every prefix of the path, the full path included so that files which only
             // differ in casing are caught as well as the folders above them
@@ -173,6 +177,9 @@ class ClassMap implements \Countable
                     if (!isset($seen[$foldedPrefix][$name])) {
                         $seen[$foldedPrefix][$name] = substr($path, 0, $offset).$name;
                     }
+                    if (!$filtered) {
+                        $relevant[$foldedPrefix] = true;
+                    }
                 }
 
                 if (false === $separator) {
@@ -184,7 +191,7 @@ class ClassMap implements \Countable
 
         $ambiguousPaths = [];
         foreach ($seen as $foldedPrefix => $variants) {
-            if (\count($variants) > 1) {
+            if (\count($variants) > 1 && isset($relevant[$foldedPrefix])) {
                 // already sorted as the paths were walked in order
                 $ambiguousPaths[$foldedPrefix] = array_values($variants);
             }
