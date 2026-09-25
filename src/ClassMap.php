@@ -146,18 +146,20 @@ class ClassMap implements \Countable
 
             // walk every prefix of the path, the full path included so that files which only
             // differ in casing are caught as well as the folders above them
+            $foldedPath = self::foldCase($path);
             $offset = 0;
             while (true) {
                 $separator = strpos($path, '/', $offset);
                 if (false === $separator) {
                     $prefix = $path;
+                    $foldedPrefix = $foldedPath;
                 } else {
                     $prefix = substr($path, 0, $separator);
+                    $foldedPrefix = substr($foldedPath, 0, $separator);
                     $offset = $separator + 1;
                 }
 
                 if ('' !== $prefix) {
-                    $foldedPrefix = self::foldCase($prefix);
                     if (!isset($visitedPaths[$foldedPrefix])) {
                         $visitedPaths[$foldedPrefix] = $prefix;
                     } elseif ($visitedPaths[$foldedPrefix] !== $prefix) {
