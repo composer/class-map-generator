@@ -159,7 +159,9 @@ class ClassMap implements \Countable
             // walk every prefix of the path, the full path included so that files which only
             // differ in casing are caught as well as the folders above them
             $foldedPath = self::foldCase($path);
-            $offset = 0;
+            // drive letters and stream wrapper schemes are never case sensitive so they are
+            // skipped, see also ClassMapGenerator::normalizePath which matches the same prefixes
+            $offset = Preg::isMatchStrictGroups('{^(?:[0-9a-z]{2,}+:(?://(?:[a-z]:)?)?|[a-z]:)}i', $path, $match) ? \strlen($match[0]) : 0;
             while (true) {
                 $separator = strpos($path, '/', $offset);
                 $end = false === $separator ? \strlen($path) : $separator;
