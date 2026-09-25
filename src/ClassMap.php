@@ -142,6 +142,13 @@ class ClassMap implements \Countable
         foreach ($this->map as $path) {
             $paths[] = strtr($path, '\\', '/');
         }
+        // a class found in several files only has one of them in the map, but the others
+        // are just as relevant here, and typically are the renamed folder's stale copies
+        foreach ($this->ambiguousClasses as $duplicatePaths) {
+            foreach ($duplicatePaths as $path) {
+                $paths[] = strtr($path, '\\', '/');
+            }
+        }
         // sort so that the result does not depend on the order in which files were scanned
         sort($paths, SORT_STRING);
 
