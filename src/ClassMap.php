@@ -161,14 +161,13 @@ class ClassMap implements \Countable
             $foldedPath = self::foldCase($path);
             // drive letters and stream wrapper schemes are never case sensitive so they are
             // skipped, see also ClassMapGenerator::normalizePath which matches the same prefixes
-            $offset = Preg::isMatchStrictGroups('{^(?:[0-9a-z]{2,}+:(?://(?:[a-z]:)?)?|[a-z]:)}i', $path, $match) ? \strlen($match[0]) : 0;
-            while (true) {
-                $separator = strpos($path, '/', $offset);
-                $end = false === $separator ? \strlen($path) : $separator;
-                $name = substr($path, $offset, $end - $offset);
+            $rootLength = Preg::isMatchStrictGroups('{^(?:[0-9a-z]{2,}+:(?://(?:[a-z]:)?)?|[a-z]:)}i', $path, $match) ? \strlen($match[0]) : 0;
+            $offset = 0;
+            foreach (explode('/', $path) as $name) {
+                $end = $offset + \strlen($name);
                 // a name written the same way as one already seen only differs by its parents,
                 // which get reported at their own level
-                if ('' !== $name) {
+                if ('' !== $name && $end > $rootLength) {
                     $foldedPrefix = substr($foldedPath, 0, $end);
                     if (!isset($seen[$foldedPrefix][$name])) {
                         $seen[$foldedPrefix][$name] = substr($path, 0, $offset).$name;
@@ -177,11 +176,7 @@ class ClassMap implements \Countable
                         $relevant[$foldedPrefix] = true;
                     }
                 }
-
-                if (false === $separator) {
-                    break;
-                }
-                $offset = $separator + 1;
+                $offset = $end + 1;
             }
         }
 
