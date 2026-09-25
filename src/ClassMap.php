@@ -138,8 +138,14 @@ class ClassMap implements \Countable
         $visitedPaths = [];
         /** @var array<string, non-empty-list<non-empty-string>> $ambiguousPaths */
         $ambiguousPaths = [];
+        $paths = [];
         foreach ($this->map as $path) {
-            $path = strtr($path, '\\', '/');
+            $paths[] = strtr($path, '\\', '/');
+        }
+        // sort so that the result does not depend on the order in which files were scanned
+        sort($paths, SORT_STRING);
+
+        foreach ($paths as $path) {
             if (false !== $duplicatesFilter && Preg::isMatch($duplicatesFilter, $path)) {
                 continue;
             }
@@ -181,11 +187,11 @@ class ClassMap implements \Countable
             }
         }
 
-        // sort to keep the output stable, as $this->map follows filesystem traversal order
+        // sort the groups by folded path, as they are created whenever a second variant is seen
         ksort($ambiguousPaths, SORT_STRING);
-        foreach ($ambiguousPaths as $foldedPrefix => $paths) {
-            sort($paths, SORT_STRING);
-            $ambiguousPaths[$foldedPrefix] = $paths;
+        foreach ($ambiguousPaths as $foldedPrefix => $group) {
+            sort($group, SORT_STRING);
+            $ambiguousPaths[$foldedPrefix] = $group;
         }
 
         return array_values($ambiguousPaths);
