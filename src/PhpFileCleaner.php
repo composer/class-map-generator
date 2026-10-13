@@ -20,7 +20,7 @@ use Composer\Pcre\Preg;
  */
 class PhpFileCleaner
 {
-    /** @var array<array{name: string, length: int, pattern: non-empty-string}> */
+    /** @var array<string, list<array{name: string, length: int, pattern: non-empty-string}>> */
     private static $typeConfig;
 
     /** @var non-empty-string */
@@ -52,11 +52,22 @@ class PhpFileCleaner
      */
     public static function setTypeConfig(array $types): void
     {
+        self::$typeConfig = [];
+
         foreach ($types as $type) {
-            self::$typeConfig[$type[0]] = [
+            if ('extension' === $type) {
+                // extension declarations are only recognized with the full "Name on Target $var" tail, both to
+                // rule out false positives ("extension" is a valid symbol name) and because the early-return
+                // in clean() must keep everything the parser regex needs to see
+                $pattern = '{.\b(?<![\$:>])extension\s++[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+\s++on\s++\\\\?[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+(?:\s*+\\\\\s*+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+)*+\s*+\$[a-zA-Z_\x7f-\xff]}Ais';
+            } else {
+                $pattern = '{.\b(?<![\$:>])'.$type.'\s++[a-zA-Z_\x7f-\xff:][a-zA-Z0-9_\x7f-\xff:\-]*+}Ais';
+            }
+
+            self::$typeConfig[$type[0]][] = [
                 'name' => $type,
                 'length' => \strlen($type),
-                'pattern' => '{.\b(?<![\$:>])'.$type.'\s++[a-zA-Z_\x7f-\xff:][a-zA-Z0-9_\x7f-\xff:\-]*+}Ais',
+                'pattern' => $pattern,
             ];
         }
 
@@ -118,12 +129,13 @@ class PhpFileCleaner
                 }
 
                 if ($this->maxMatches === 1 && isset(self::$typeConfig[$char])) {
-                    $type = self::$typeConfig[$char];
-                    if (
-                        substr($this->contents, $this->index, $type['length']) === $type['name']
-                        && Preg::isMatch($type['pattern'], $this->contents, $match, 0, $this->index - 1)
-                    ) {
-                        return $clean . $match[0];
+                    foreach (self::$typeConfig[$char] as $type) {
+                        if (
+                            substr($this->contents, $this->index, $type['length']) === $type['name']
+                            && Preg::isMatch($type['pattern'], $this->contents, $match, 0, $this->index - 1)
+                        ) {
+                            return $clean . $match[0];
+                        }
                     }
                 }
 
