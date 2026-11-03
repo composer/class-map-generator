@@ -47,7 +47,13 @@ class PhpFileCleaner
     /** @var int */
     private $index = 0;
 
-    /** @var bool */
+    /**
+     * Whether contents are the original source rather than php_strip_whitespace() output,
+     * in which case # and // comments are still present and must be skipped here
+     *
+     * @readonly
+     * @var bool
+     */
     private $rawContents;
 
     /**
@@ -66,6 +72,9 @@ class PhpFileCleaner
         self::$rejectChars = '?"\'`</#'.implode('', array_keys(self::$typeConfig));
     }
 
+    /**
+     * @param bool $rawContents true if $contents is unprocessed source, false if it went through php_strip_whitespace()
+     */
     public function __construct(string $contents, int $maxMatches, bool $rawContents = false)
     {
         $this->contents = $contents;
@@ -195,6 +204,9 @@ class PhpFileCleaner
         }
     }
 
+    /**
+     * @param bool $phpComment true when skipping a # or // comment, which PHP also ends at a ?> close tag
+     */
     private function skipToNewline(bool $phpComment = false): void
     {
         do {
