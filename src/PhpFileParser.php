@@ -38,10 +38,9 @@ class PhpFileParser
         // Use @ here instead of Silencer to actively suppress 'unhelpful' output
         // @link https://github.com/composer/composer/pull/4886
         // Avoid a tokenizer pass when the cleaner can process the original source.
-        // Preserve tokenizer handling of shell strings.
         $rawContents = true;
         $contents = \function_exists('file_get_contents') ? @file_get_contents($path) : false;
-        if ($contents === false || $contents === '' || strpos($contents, '`') !== false) {
+        if ($contents === false || $contents === '') {
             $rawContents = false;
             unset($contents);
             $contents = @php_strip_whitespace($path);
