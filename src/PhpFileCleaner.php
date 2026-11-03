@@ -60,7 +60,7 @@ class PhpFileCleaner
             ];
         }
 
-        self::$rejectChars = '?"\'</'.implode('', array_keys(self::$typeConfig));
+        self::$rejectChars = '?"\'`</'.implode('', array_keys(self::$typeConfig));
     }
 
     public function __construct(string $contents, int $maxMatches)
@@ -92,8 +92,8 @@ class PhpFileCleaner
                     continue;
                 }
 
-                if ($char === "'") {
-                    $this->skipString("'");
+                if ($char === "'" || $char === '`') {
+                    $this->skipString($char);
                     $clean .= 'null';
                     continue;
                 }

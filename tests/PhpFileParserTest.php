@@ -44,9 +44,8 @@ class PhpFileParserTest extends TestCase
             'comment-spliced keyword' => ['comment-spliced-keyword.php', ['Spliced\Real']],
             'docblock class names' => ['docblock.php', ['Docblock\Real']],
             'empty file' => ['empty.php', []],
-            // Shell (backtick) strings are not skipped by the cleaner yet.
-            'hash inside a shell string' => ['shell-hash.php', ['ShellHash\Fake', 'ShellHash\Real']],
-            'close tag inside a shell string' => ['shell-close-tag.php', []],
+            'hash inside a shell string' => ['shell-hash.php', ['ShellHash\Real']],
+            'close tag inside a shell string' => ['shell-close-tag.php', ['ShellClose\Real']],
         ];
     }
 
