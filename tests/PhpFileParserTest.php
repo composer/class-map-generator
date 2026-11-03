@@ -22,6 +22,33 @@ use PHPUnit\Framework\TestCase;
 
 class PhpFileParserTest extends TestCase
 {
+    /**
+     * @dataProvider provideRawSourceFiles
+     * @param list<string> $expected
+     */
+    public function testRawSourcePreservesClassExtraction(string $file, array $expected): void
+    {
+        self::assertSame($expected, PhpFileParser::findClasses(__DIR__ . '/Fixtures/raw-source/' . $file));
+    }
+
+    /**
+     * @return array<string, array{string, list<string>}>
+     */
+    public static function provideRawSourceFiles(): array
+    {
+        return [
+            'hash comments' => ['hash-comments.php', ['HashComments\Real']],
+            'hash comment ending at a close tag' => ['hash-close-tag.php', ['HashClose\Real']],
+            'slash comment ending at a close tag' => ['slash-close-tag.php', ['SlashClose\Real']],
+            'attributes' => ['attributes.php', ['Attributes\Real']],
+            'comment-spliced keyword' => ['comment-spliced-keyword.php', ['Spliced\Real']],
+            'docblock class names' => ['docblock.php', ['Docblock\Real']],
+            'empty file' => ['empty.php', []],
+            'hash inside a shell string' => ['shell-hash.php', ['ShellHash\Real']],
+            'close tag inside a shell string' => ['shell-close-tag.php', ['ShellClose\Real']],
+        ];
+    }
+
     public function testFindClassesThrowsWhenFileDoesNotExist(): void
     {
         self::expectException('RuntimeException');
