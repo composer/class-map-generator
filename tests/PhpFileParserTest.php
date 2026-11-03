@@ -41,7 +41,8 @@ class PhpFileParserTest extends TestCase
             'hash comment ending at a close tag' => ['hash-close-tag.php', ['HashClose\Real']],
             'slash comment ending at a close tag' => ['slash-close-tag.php', ['SlashClose\Real']],
             'attributes' => ['attributes.php', ['Attributes\Real']],
-            'comment-spliced keyword' => ['comment-spliced-keyword.php', ['Spliced\Real']],
+            // Invalid PHP, a comment cannot split a keyword
+            'comment-spliced keyword' => ['comment-spliced-keyword.php', []],
             'docblock class names' => ['docblock.php', ['Docblock\Real']],
             'empty file' => ['empty.php', []],
             'hash inside a shell string' => ['shell-hash.php', ['ShellHash\Real']],
