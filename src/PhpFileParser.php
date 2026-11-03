@@ -41,7 +41,7 @@ class PhpFileParser
         // Preserve tokenizer handling of shell strings and comment-spliced identifiers.
         $rawContents = true;
         $contents = \function_exists('file_get_contents') ? @file_get_contents($path) : false;
-        if ($contents === false || $contents === '' || str_contains($contents, '`') || Preg::isMatch('{[a-zA-Z0-9_\x7f-\xff]/\*}', $contents)) {
+        if ($contents === false || $contents === '' || strpos($contents, '`') !== false || Preg::isMatch('{[a-zA-Z0-9_\x7f-\xff]/\*}', $contents)) {
             $rawContents = false;
             unset($contents);
             $contents = @php_strip_whitespace($path);
