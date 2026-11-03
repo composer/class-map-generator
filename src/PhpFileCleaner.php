@@ -86,13 +86,7 @@ class PhpFileCleaner
                     continue 2;
                 }
 
-                if ($char === '"') {
-                    $this->skipString('"');
-                    $clean .= 'null';
-                    continue;
-                }
-
-                if ($char === "'" || $char === '`') {
+                if ($char === '"' || $char === "'" || $char === '`') {
                     $this->skipString($char);
                     $clean .= 'null';
                     continue;
