@@ -228,13 +228,13 @@ class ClassMapGenerator
         $realSubPath = substr($realSubPath, 0, $dotPosition === false ? PHP_INT_MAX : $dotPosition);
 
         foreach ($classes as $class) {
+            if ('' !== $baseNamespace && !str_starts_with($class, $baseNamespace)) {
+                $rejectedClasses[] = $class;
+                continue;
+            }
+                
             // transform class name to file path and validate
             if ('psr-0' === $namespaceType) {
-                if ('' !== $baseNamespace && !str_starts_with($class, $baseNamespace)) {
-                    $rejectedClasses[] = $class;
-                    continue;
-                }
-
                 $namespaceLength = strrpos($class, '\\');
                 if (false !== $namespaceLength) {
                     $namespace = substr($class, 0, $namespaceLength + 1);

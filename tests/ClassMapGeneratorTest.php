@@ -494,6 +494,32 @@ class ClassMapGeneratorTest extends TestCase
         );
     }
 
+    public function testPsr4OptimizedClassmapRespectsNamespacePrefix(): void
+    {
+        $this->generator->scanPaths(
+            __DIR__ . '/Fixtures/psr4BaseNamespaceMatch/src',
+            null,
+            'psr-4',
+            'Acme\\'
+        );
+
+        $classMap = $this->generator->getClassMap();
+        $map = $classMap->getMap();
+
+        self::assertArrayHasKey('Acme\\Bar', $map);
+        self::assertArrayNotHasKey('Acme\\Foo', $map);
+        self::assertArrayNotHasKey('Agmr\\Foo', $map);
+
+        $violations = $classMap->getPsrViolations();
+        sort($violations);
+        self::assertSame(
+            [
+                'Class Agmr\Foo located in ./tests/Fixtures/psr4BaseNamespaceMatch/src/Foo.php does not comply with psr-4 autoloading standard (rule: Acme\ => ./tests/Fixtures/psr4BaseNamespaceMatch/src). Skipping.',
+            ],
+            $violations
+        );
+    }
+
     public static function getUniqueTmpDirectory(): string
     {
         $attempts = 5;
