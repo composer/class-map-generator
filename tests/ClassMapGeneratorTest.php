@@ -494,7 +494,7 @@ class ClassMapGeneratorTest extends TestCase
         );
     }
 
-    public function testPsr4OptimizedClassmapRespectsNamespacePrefix(): void
+    public function testPsr4BaseNamespaceMatch(): void
     {
         $this->generator->scanPaths(
             __DIR__ . '/Fixtures/psr4BaseNamespaceMatch/src',
