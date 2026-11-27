@@ -232,7 +232,7 @@ class ClassMapGenerator
                 $rejectedClasses[] = $class;
                 continue;
             }
-                
+
             // transform class name to file path and validate
             if ('psr-0' === $namespaceType) {
                 $namespaceLength = strrpos($class, '\\');

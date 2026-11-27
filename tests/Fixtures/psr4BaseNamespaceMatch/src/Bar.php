@@ -2,6 +2,6 @@
 
 namespace Acme;
 
-class Bar 
+class Bar
 {
 }
